@@ -4,6 +4,10 @@ import { v4 as uuidv4 } from "uuid";
 
 // Rota APENAS para testes - não chama Mercado Pago
 export async function POST(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   try {
     console.log("🧪 [TESTE] Criando pedido sem Mercado Pago...");
     const { quizData, email } = await req.json();

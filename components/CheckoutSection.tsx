@@ -26,10 +26,11 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
   const [emailError, setEmailError] = useState<string>("");
 
   const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
+  const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
+  const isProduction = process.env.NODE_ENV === "production";
 
   useEffect(() => {
     // Inicializar Mercado Pago
-    const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
     if (publicKey) {
       initMercadoPago(publicKey, { locale: "pt-BR" });
     }
@@ -43,6 +44,11 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
   const handlePayment = async () => {
     if (!email || !validateEmail(email)) {
       setEmailError("Digite um email válido");
+      return;
+    }
+
+    if (!publicKey) {
+      setEmailError("Pagamento indisponível no momento. Tente novamente mais tarde.");
       return;
     }
 
@@ -60,12 +66,18 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
         }),
       });
       
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       console.log("Pedido criado:", data);
-      
+
+      if (!response.ok) {
+        console.error("Erro ao criar pedido:", data);
+        setEmailError(data?.error || "Erro ao processar. Tente novamente.");
+        return;
+      }
+
       if (!data.preferenceId) {
         console.error("Preference ID não retornado:", data);
-        setEmailError("Erro ao processar. Tente novamente.");
+        setEmailError(data?.error || "Erro ao processar. Tente novamente.");
         return;
       }
       
@@ -120,6 +132,7 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
 
   const onError = (error: any) => {
     console.error("Erro no Payment Brick:", error);
+    setEmailError("Erro ao carregar o checkout. Tente novamente.");
   };
 
   // Simulação de pagamento aprovado (para teste)
@@ -237,14 +250,16 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
             </Button>
 
             {/* Botão de teste - remover em produção */}
-            <Button
-              onClick={simulatePayment}
-              variant="outline"
-              className="w-full text-sm"
-              disabled={!email}
-            >
-              [TESTE] Simular Pagamento Aprovado
-            </Button>
+            {!isProduction && (
+              <Button
+                onClick={simulatePayment}
+                variant="outline"
+                className="w-full text-sm"
+                disabled={!email}
+              >
+                [TESTE] Simular Pagamento Aprovado
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
