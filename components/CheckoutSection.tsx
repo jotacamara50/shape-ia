@@ -261,7 +261,7 @@ export function CheckoutSection({ onPaymentSuccess, quizData, customButton }: Ch
                     },
                   },
                   paymentMethods: {
-                    maxInstallments: 12
+                    mercadoPago: "all"
                   }
                 }}
               />
