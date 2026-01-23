@@ -278,8 +278,10 @@ export const CheckoutSection = memo(function CheckoutSection(
                     },
                   },
                   paymentMethods: {
-                    mercadoPago: "all"
-                  }
+                    creditCard: "all",
+                    debitCard: "all",
+                    bankTransfer: "all",
+                  },
                 }}
               />
             )}
