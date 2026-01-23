@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:1.5
+    container_name: shapeia-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./data/nginx/certs:/etc/nginx/certs:rw
+      - ./data/nginx/vhost.d:/etc/nginx/vhost.d:rw
+      - ./data/nginx/html:/usr/share/nginx/html:rw
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy
+
+  acme-companion:
+    image: nginxproxy/acme-companion:2.2
+    container_name: shapeia-acme
+    restart: unless-stopped
+    environment:
+      DEFAULT_EMAIL: contato@shapeia.com.br
+      NGINX_PROXY_CONTAINER: shapeia-nginx-proxy
+    volumes:
+      - ./data/nginx/certs:/etc/nginx/certs:rw
+      - ./data/nginx/vhost.d:/etc/nginx/vhost.d:rw
+      - ./data/nginx/html:/usr/share/nginx/html:rw
+      - ./data/nginx/acme:/etc/acme.sh:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - nginx-proxy
+    networks:
+      - proxy
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: shapeia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_DB: shapeia
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shapeia-app
+    restart: unless-stopped
+    environment:
+      # Next.js
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+      
+      # Domain configuration
+      VIRTUAL_HOST: shapeia.com.br,www.shapeia.com.br
+      LETSENCRYPT_HOST: shapeia.com.br,www.shapeia.com.br
+      LETSENCRYPT_EMAIL: contato@shapeia.com.br
+      VIRTUAL_PORT: "3000"
+      HTTPS_METHOD: "noredirect"
+      
+      # Application URLs
+      NEXT_PUBLIC_BASE_URL: https://shapeia.com.br
+      
+      # Database (PostgreSQL interno)
+      POSTGRES_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/shapeia
+      
+      # OpenAI API
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # Mercado Pago (usar credenciais de PRODUÇÃO)
+      NEXT_PUBLIC_MP_PUBLIC_KEY: ${NEXT_PUBLIC_MP_PUBLIC_KEY}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      
+      # Product pricing
+      NEXT_PUBLIC_PRODUCT_PRICE: ${NEXT_PUBLIC_PRODUCT_PRICE:-27.90}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: shapeia-proxy
+
+volumes:
+  postgres_data:
+    name: shapeia-postgres-data
