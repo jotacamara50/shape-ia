@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
       { plan, userData }
     ) as React.ReactElement;
     const pdfBuffer = await renderToBuffer(pdfElement);
+    const pdfBytes = new Uint8Array(pdfBuffer);
 
     // Retornar PDF como response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
