@@ -415,7 +415,7 @@ export default function SeuPlanoPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-700 mb-3">
-                    "Eu sempre desistia na segunda semana pq a comida era ruim. O que eu mais gostei aqui foi poder escolher que NÃO gosto de peixe. O cardápio ficou perfeito."
+                    &quot;Eu sempre desistia na segunda semana pq a comida era ruim. O que eu mais gostei aqui foi poder escolher que NÃO gosto de peixe. O cardápio ficou perfeito.&quot;
                   </p>
                   <div className="text-yellow-500 text-lg">⭐⭐⭐⭐⭐</div>
                 </CardContent>
@@ -436,7 +436,7 @@ export default function SeuPlanoPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-700 mb-3">
-                    "Simples e direto. O treino que veio junto é básico mas funciona, tô conseguindo fazer em casa mesmo. Valeu cada centavo dos 27 reais."
+                    &quot;Simples e direto. O treino que veio junto é básico mas funciona, tô conseguindo fazer em casa mesmo. Valeu cada centavo dos 27 reais.&quot;
                   </p>
                   <div className="text-yellow-500 text-lg">⭐⭐⭐⭐⭐</div>
                 </CardContent>
@@ -457,7 +457,7 @@ export default function SeuPlanoPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-700 mb-3">
-                    "Gente, a lista de compras é tudo! Imprimi e levei no mercado, não comprei nada fora da dieta. Já desinchei 2kg em 5 dias."
+                    &quot;Gente, a lista de compras é tudo! Imprimi e levei no mercado, não comprei nada fora da dieta. Já desinchei 2kg em 5 dias.&quot;
                   </p>
                   <div className="text-yellow-500 text-lg">⭐⭐⭐⭐⭐</div>
                 </CardContent>
