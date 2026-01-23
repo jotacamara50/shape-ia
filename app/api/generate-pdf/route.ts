@@ -33,9 +33,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Gerar PDF usando createElement
-    const pdfBuffer = await renderToBuffer(
-      React.createElement(NutritionPlanPDF, { plan, userData })
-    );
+    const pdfElement = React.createElement(
+      NutritionPlanPDF,
+      { plan, userData }
+    ) as React.ReactElement;
+    const pdfBuffer = await renderToBuffer(pdfElement);
 
     // Retornar PDF como response
     return new NextResponse(pdfBuffer, {
