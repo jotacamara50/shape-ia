@@ -82,6 +82,7 @@ services:
       # Mercado Pago (usar credenciais de PRODUÇÃO)
       NEXT_PUBLIC_MP_PUBLIC_KEY: ${NEXT_PUBLIC_MP_PUBLIC_KEY}
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
       
       # Product pricing
       NEXT_PUBLIC_PRODUCT_PRICE: ${NEXT_PUBLIC_PRODUCT_PRICE:-27.90}

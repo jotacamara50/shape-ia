@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { 
   getPaymentByMpId, 
   savePayment, 
@@ -8,9 +9,58 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    // Mercado Pago envia os dados do webhook
-    const body = await req.json();
+    // Validar assinatura do Mercado Pago (segurança)
+    const xSignature = req.headers.get("x-signature");
+    const xRequestId = req.headers.get("x-request-id");
+    const mpSecret = process.env.MP_WEBHOOK_SECRET;
 
+    // Se a assinatura secreta estiver configurada, validar
+    if (mpSecret && xSignature && xRequestId) {
+      const bodyText = await req.text();
+      const parts = xSignature.split(",");
+      
+      let ts: string | undefined;
+      let hash: string | undefined;
+      
+      parts.forEach((part) => {
+        const [key, value] = part.split("=");
+        if (key && value) {
+          const trimmedKey = key.trim();
+          const trimmedValue = value.trim();
+          if (trimmedKey === "ts") ts = trimmedValue;
+          if (trimmedKey === "v1") hash = trimmedValue;
+        }
+      });
+
+      if (ts && hash) {
+        const manifest = `id:${xRequestId};request-id:${xRequestId};ts:${ts};`;
+        const hmac = crypto.createHmac("sha256", mpSecret);
+        hmac.update(manifest);
+        const sha = hmac.digest("hex");
+
+        if (sha !== hash) {
+          console.error("❌ Assinatura inválida do webhook");
+          return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+        }
+        console.log("✅ Assinatura do webhook validada");
+      }
+
+      // Parse body again after validation
+      const body = JSON.parse(bodyText);
+      return await processWebhook(body);
+    }
+
+    // Se não tiver secret configurado, processa normalmente (desenvolvimento)
+    const body = await req.json();
+    return await processWebhook(body);
+  } catch (error) {
+    console.error("❌ Erro no webhook:", error);
+    return NextResponse.json({ error: "Webhook error" }, { status: 500 });
+  }
+}
+
+async function processWebhook(body: any) {
+  try {
     console.log("🔔 Webhook recebido:", body);
 
     // Mercado Pago envia diferentes tipos de notificação
