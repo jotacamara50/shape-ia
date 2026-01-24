@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById } from "@/lib/db";
+import { getOrderById, updateOrderStatus } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,6 +19,47 @@ export async function GET(req: NextRequest) {
         { error: "Order not found" },
         { status: 404 }
       );
+    }
+
+    if (order.status !== "paid" && order.payment_id) {
+      const accessToken = process.env.MP_ACCESS_TOKEN;
+
+      if (accessToken) {
+        const paymentResponse = await fetch(
+          `https://api.mercadopago.com/v1/payments/${order.payment_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (paymentResponse.ok) {
+          const paymentData = await paymentResponse.json();
+          let orderStatus: "pending" | "paid" | "failed" = "pending";
+
+          if (paymentData.status === "approved") {
+            orderStatus = "paid";
+          } else if (
+            paymentData.status === "rejected" ||
+            paymentData.status === "cancelled"
+          ) {
+            orderStatus = "failed";
+          }
+
+          if (orderStatus !== order.status) {
+            await updateOrderStatus(
+              order.id,
+              orderStatus,
+              paymentData.id?.toString(),
+              paymentData.payment_type_id
+            );
+            order.status = orderStatus;
+            order.payment_id = paymentData.id?.toString() || order.payment_id;
+            order.payment_method = paymentData.payment_type_id || order.payment_method;
+          }
+        }
+      }
     }
 
     return NextResponse.json({
