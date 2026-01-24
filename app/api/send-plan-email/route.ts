@@ -7,6 +7,11 @@ import { NutritionPlan, QuizData } from "@/types";
 
 export const runtime = "nodejs";
 
+const isValidEmail = (value: string) => {
+  const email = value.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { email, plan, userData }: {
@@ -18,6 +23,13 @@ export async function POST(req: NextRequest) {
     if (!email || !plan || !userData) {
       return NextResponse.json(
         { error: "Email, plan and userData are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
         { status: 400 }
       );
     }
@@ -41,10 +53,10 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(apiKey);
     const filename = `plano-alimentar-${userData.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
 
-    console.log("Enviando email para:", email);
+    console.log("Enviando email para:", email.trim());
     const { data, error } = await resend.emails.send({
       from,
-      to: email,
+      to: email.trim(),
       subject: "Seu plano alimentar esta pronto!",
       html: `
         <p>Ol? ${userData.name},</p>

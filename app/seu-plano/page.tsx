@@ -90,7 +90,9 @@ export default function SeuPlanoPage() {
       const plan = await response.json();
       setNutritionPlan(plan);
 
-      if (payerEmail) {
+      const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+      if (payerEmail && isValidEmail(payerEmail)) {
         setPayerEmail(payerEmail);
         setEmailStatus("sending");
         setEmailMessage(`Enviando o PDF para ${payerEmail}...`);
@@ -118,6 +120,9 @@ export default function SeuPlanoPage() {
           setEmailStatus("failed");
           setEmailMessage("Não foi possível enviar o e-mail. Você pode baixar o PDF aqui.");
         }
+      } else if (payerEmail) {
+        setEmailStatus("failed");
+        setEmailMessage("Email do Mercado Pago não está disponível. Você pode baixar o PDF aqui.");
       }
     } catch (error) {
       console.error("Erro ao gerar plano:", error);

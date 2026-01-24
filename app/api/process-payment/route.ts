@@ -32,9 +32,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (email && email !== order.customer_email) {
-      await updateOrderEmail(order.id, email);
-      order.customer_email = email;
+    const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+    if (email && isValidEmail(email) && email !== order.customer_email) {
+      const normalizedEmail = email.trim();
+      await updateOrderEmail(order.id, normalizedEmail);
+      order.customer_email = normalizedEmail;
     }
 
     const paymentMethodId =
@@ -43,7 +46,11 @@ export async function POST(req: NextRequest) {
     const installments = formData?.installments;
     const token = formData?.token;
 
-    const payerEmail = email || order.customer_email;
+    console.log("💳 MP formData payer email:", formData?.payer?.email || null);
+    console.log("💳 MP formData payment_method_id:", paymentMethodId || null);
+    console.log("💳 MP formData payment_type_id:", formData?.payment_type_id || null);
+
+    const payerEmail = (email && isValidEmail(email)) ? email.trim() : order.customer_email;
     const paymentBody: Record<string, any> = {
       transaction_amount: Number(order.amount),
       description: "Plano Alimentar Personalizado Shape IA",
@@ -78,6 +85,7 @@ export async function POST(req: NextRequest) {
 
     const result = await response.json();
     console.log("💳 Resultado Mercado Pago:", result?.status, result?.status_detail);
+    console.log("💳 MP payer email (response):", result?.payer?.email || null);
 
     if (!response.ok) {
       console.error("💳 Erro Mercado Pago:", result);
@@ -88,9 +96,10 @@ export async function POST(req: NextRequest) {
     }
 
     const resolvedEmail = result?.payer?.email || payerEmail;
-    if (resolvedEmail && resolvedEmail !== order.customer_email) {
-      await updateOrderEmail(order.id, resolvedEmail);
-      order.customer_email = resolvedEmail;
+    if (resolvedEmail && isValidEmail(resolvedEmail) && resolvedEmail !== order.customer_email) {
+      const normalizedEmail = resolvedEmail.trim();
+      await updateOrderEmail(order.id, normalizedEmail);
+      order.customer_email = normalizedEmail;
     }
 
     const mpPaymentId = result.id?.toString();
@@ -131,7 +140,7 @@ export async function POST(req: NextRequest) {
       qrCode: transactionData?.qr_code,
       ticketUrl: transactionData?.ticket_url,
       downloadToken: result.status === "approved" ? order.download_token : null,
-      payerEmail: order.customer_email,
+      payerEmail: isValidEmail(order.customer_email || "") ? order.customer_email : null,
     });
   } catch (error) {
     console.error("Erro ao processar pagamento:", error);

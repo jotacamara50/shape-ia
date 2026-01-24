@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
 
         if (paymentResponse.ok) {
           const paymentData = await paymentResponse.json();
+          console.log("💳 MP check status:", paymentData?.status, paymentData?.status_detail);
+          console.log("💳 MP payer email (check):", paymentData?.payer?.email || null);
           let orderStatus: "pending" | "paid" | "failed" = "pending";
 
           if (paymentData.status === "approved") {
@@ -47,9 +49,11 @@ export async function GET(req: NextRequest) {
             orderStatus = "failed";
           }
 
-          if (paymentData?.payer?.email && paymentData.payer.email !== order.customer_email) {
-            await updateOrderEmail(order.id, paymentData.payer.email);
-            order.customer_email = paymentData.payer.email;
+          const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+          if (paymentData?.payer?.email && isValidEmail(paymentData.payer.email) && paymentData.payer.email !== order.customer_email) {
+            const normalizedEmail = paymentData.payer.email.trim();
+            await updateOrderEmail(order.id, normalizedEmail);
+            order.customer_email = normalizedEmail;
           }
 
           if (orderStatus !== order.status) {
@@ -67,11 +71,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
     return NextResponse.json({
       status: order.status,
       isPaid: order.status === "paid",
       downloadToken: order.status === "paid" ? order.download_token : null,
-      payerEmail: order.customer_email,
+      payerEmail: isValidEmail(order.customer_email || "") ? order.customer_email : null,
     });
   } catch (error) {
     console.error("Erro ao verificar status:", error);
