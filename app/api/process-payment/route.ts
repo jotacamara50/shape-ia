@@ -32,8 +32,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const paymentBody = {
-      ...formData,
+    const paymentMethodId =
+      formData?.payment_method_id || formData?.paymentMethodId;
+    const issuerId = formData?.issuer_id || formData?.issuerId;
+    const installments = formData?.installments;
+    const token = formData?.token;
+
+    const paymentBody: Record<string, any> = {
       transaction_amount: Number(order.amount),
       description: "Plano Alimentar Personalizado Shape IA",
       payer: {
@@ -45,6 +50,14 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
       },
     };
+
+    if (paymentMethodId) paymentBody.payment_method_id = paymentMethodId;
+    if (issuerId) paymentBody.issuer_id = issuerId;
+    if (installments) paymentBody.installments = Number(installments);
+    if (token) paymentBody.token = token;
+    if (formData?.payment_type_id) {
+      paymentBody.payment_type_id = formData.payment_type_id;
+    }
 
     // Processar pagamento via Mercado Pago API
     const response = await fetch("https://api.mercadopago.com/v1/payments", {
@@ -61,6 +74,7 @@ export async function POST(req: NextRequest) {
     console.log("💳 Resultado Mercado Pago:", result?.status, result?.status_detail);
 
     if (!response.ok) {
+      console.error("💳 Erro Mercado Pago:", result);
       return NextResponse.json(
         { error: result?.message || "Erro ao processar pagamento", details: result },
         { status: 500 }
