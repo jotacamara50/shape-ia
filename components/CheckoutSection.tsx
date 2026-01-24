@@ -132,7 +132,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     setTimeout(() => clearInterval(interval), 600000);
   };
 
-  const onSubmit = async (formData: any) => {
+  const onSubmit = async (submission: any) => {
     setPaymentStatus("processing");
     setEmailError("");
 
@@ -143,6 +143,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     }
 
     try {
+      const formData = submission?.formData ?? submission;
       const response = await fetch("/api/process-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
