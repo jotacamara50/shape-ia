@@ -26,6 +26,11 @@ export const CheckoutSection = memo(function CheckoutSection(
   const [orderId, setOrderId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
+  const [pixData, setPixData] = useState<{
+    qrCodeBase64?: string;
+    qrCode?: string;
+    ticketUrl?: string;
+  } | null>(null);
 
   const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
@@ -55,6 +60,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     }
 
     setEmailError("");
+    setPixData(null);
     
     // Criar pedido no banco de dados
     try {
@@ -128,8 +134,49 @@ export const CheckoutSection = memo(function CheckoutSection(
 
   const onSubmit = async (formData: any) => {
     setPaymentStatus("processing");
-    // O webhook do Mercado Pago vai atualizar o status
-    // O polling vai detectar a mudança
+    setEmailError("");
+
+    if (!orderId) {
+      setPaymentStatus("pending");
+      setEmailError("Pedido não encontrado. Tente novamente.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/process-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          formData,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setPaymentStatus("pending");
+        setEmailError(data?.error || "Erro ao processar pagamento. Tente novamente.");
+        return;
+      }
+
+      if (data?.qrCodeBase64 || data?.qrCode || data?.ticketUrl) {
+        setPixData({
+          qrCodeBase64: data.qrCodeBase64,
+          qrCode: data.qrCode,
+          ticketUrl: data.ticketUrl,
+        });
+      }
+
+      if (data?.status === "approved" && data?.downloadToken) {
+        setPaymentStatus("approved");
+        onPaymentSuccess(data.downloadToken);
+      }
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      setPaymentStatus("pending");
+      setEmailError("Erro ao processar pagamento. Tente novamente.");
+    }
   };
 
   const onError = (error: any) => {
@@ -289,6 +336,57 @@ export const CheckoutSection = memo(function CheckoutSection(
             <p className="text-xs text-center text-gray-500">
               Você será redirecionado após o pagamento
             </p>
+
+            {pixData && (
+              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm font-semibold text-gray-800 mb-3">
+                  Pix gerado — pague para liberar o acesso
+                </p>
+
+                {pixData.qrCodeBase64 && (
+                  <div className="flex justify-center mb-3">
+                    <img
+                      src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                      alt="QR Code Pix"
+                      className="h-48 w-48"
+                    />
+                  </div>
+                )}
+
+                {pixData.qrCode && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-600">Copie o código Pix:</p>
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={pixData.qrCode}
+                        className="text-xs"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigator.clipboard.writeText(pixData.qrCode || "")}
+                      >
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {pixData.ticketUrl && (
+                  <div className="mt-3">
+                    <a
+                      href={pixData.ticketUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-green-700 underline"
+                    >
+                      Abrir instruções do Pix
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

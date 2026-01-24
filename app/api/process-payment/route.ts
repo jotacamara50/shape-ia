@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import { getOrderById, savePayment, updateOrderStatus } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const paymentData = await req.json();
+    const { orderId, formData } = await req.json();
 
     const accessToken = process.env.MP_ACCESS_TOKEN;
 
@@ -13,25 +15,94 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "Order ID required" },
+        { status: 400 }
+      );
+    }
+
+    const order = await getOrderById(orderId);
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    const paymentBody = {
+      ...formData,
+      transaction_amount: Number(order.amount),
+      description: "Plano Alimentar Personalizado Shape IA",
+      payer: {
+        ...(formData?.payer ?? {}),
+        email: order.customer_email,
+      },
+      external_reference: order.id,
+      metadata: {
+        orderId: order.id,
+      },
+    };
+
     // Processar pagamento via Mercado Pago API
     const response = await fetch("https://api.mercadopago.com/v1/payments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
+        "X-Idempotency-Key": crypto.randomUUID(),
       },
-      body: JSON.stringify(paymentData),
+      body: JSON.stringify(paymentBody),
     });
 
     const result = await response.json();
 
-    // Aqui você pode salvar o pagamento no banco de dados
-    // E enviar o email com o PDF
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: result?.message || "Erro ao processar pagamento", details: result },
+        { status: 500 }
+      );
+    }
+
+    const mpPaymentId = result.id?.toString();
+
+    if (mpPaymentId) {
+      await savePayment({
+        orderId: order.id,
+        mpPaymentId: mpPaymentId,
+        status: result.status,
+        amount: result.transaction_amount,
+        paymentMethod: result.payment_type_id || result.payment_method_id,
+      });
+
+      let orderStatus: "pending" | "paid" | "failed" = "pending";
+
+      if (result.status === "approved") {
+        orderStatus = "paid";
+      } else if (result.status === "rejected" || result.status === "cancelled") {
+        orderStatus = "failed";
+      }
+
+      await updateOrderStatus(
+        order.id,
+        orderStatus,
+        mpPaymentId,
+        result.payment_type_id || result.payment_method_id
+      );
+    }
+
+    const transactionData = result?.point_of_interaction?.transaction_data;
 
     return NextResponse.json({
       status: result.status,
       id: result.id,
       statusDetail: result.status_detail,
+      paymentType: result.payment_type_id,
+      qrCodeBase64: transactionData?.qr_code_base64,
+      qrCode: transactionData?.qr_code,
+      ticketUrl: transactionData?.ticket_url,
+      downloadToken: result.status === "approved" ? order.download_token : null,
     });
   } catch (error) {
     console.error("Erro ao processar pagamento:", error);
