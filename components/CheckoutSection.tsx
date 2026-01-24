@@ -127,9 +127,9 @@ export const CheckoutSection = memo(function CheckoutSection(
       const formData = submission?.formData ?? submission;
       
       // Extrair email do payer data do Mercado Pago
-      const mpPayerEmail = formData?.payer?.email || quizData?.email || "nao-informado@shapeia.com";
+      const mpPayerEmail = formData?.payer?.email || quizData?.email || "";
       setPayerEmail(mpPayerEmail);
-      console.log("Email do pagador (MP):", mpPayerEmail);
+      console.log("Email do pagador (MP):", mpPayerEmail || "nao-informado");
       
       const response = await fetch("/api/process-payment", {
         method: "POST",
@@ -149,6 +149,10 @@ export const CheckoutSection = memo(function CheckoutSection(
         return Promise.reject(new Error(data?.error || "Payment failed"));
       }
 
+      if (data?.payerEmail) {
+        setPayerEmail(data.payerEmail);
+      }
+
       if (data?.qrCodeBase64 || data?.qrCode || data?.ticketUrl) {
         setPixData({
           qrCodeBase64: data.qrCodeBase64,
@@ -159,7 +163,8 @@ export const CheckoutSection = memo(function CheckoutSection(
 
       if (data?.status === "approved" && data?.downloadToken) {
         setPaymentStatus("approved");
-        onPaymentSuccess(data.downloadToken, mpPayerEmail);
+        const resolvedEmail = data?.payerEmail || mpPayerEmail;
+        onPaymentSuccess(data.downloadToken, resolvedEmail);
       } else if (data?.status === "rejected" || data?.status === "cancelled") {
         setPaymentStatus("rejected");
         setError("Pagamento recusado. Tente outro cartão ou método.");

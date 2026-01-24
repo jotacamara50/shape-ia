@@ -43,12 +43,13 @@ export async function POST(req: NextRequest) {
     const installments = formData?.installments;
     const token = formData?.token;
 
+    const payerEmail = email || order.customer_email;
     const paymentBody: Record<string, any> = {
       transaction_amount: Number(order.amount),
       description: "Plano Alimentar Personalizado Shape IA",
       payer: {
         ...(formData?.payer ?? {}),
-        email: order.customer_email,
+        email: payerEmail,
       },
       external_reference: order.id,
       metadata: {
@@ -84,6 +85,12 @@ export async function POST(req: NextRequest) {
         { error: result?.message || "Erro ao processar pagamento", details: result },
         { status: 500 }
       );
+    }
+
+    const resolvedEmail = result?.payer?.email || payerEmail;
+    if (resolvedEmail && resolvedEmail !== order.customer_email) {
+      await updateOrderEmail(order.id, resolvedEmail);
+      order.customer_email = resolvedEmail;
     }
 
     const mpPaymentId = result.id?.toString();
@@ -124,6 +131,7 @@ export async function POST(req: NextRequest) {
       qrCode: transactionData?.qr_code,
       ticketUrl: transactionData?.ticket_url,
       downloadToken: result.status === "approved" ? order.download_token : null,
+      payerEmail: order.customer_email,
     });
   } catch (error) {
     console.error("Erro ao processar pagamento:", error);

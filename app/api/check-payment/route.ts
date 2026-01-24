@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrderStatus } from "@/lib/db";
+import { getOrderById, updateOrderStatus, updateOrderEmail } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +45,11 @@ export async function GET(req: NextRequest) {
             paymentData.status === "cancelled"
           ) {
             orderStatus = "failed";
+          }
+
+          if (paymentData?.payer?.email && paymentData.payer.email !== order.customer_email) {
+            await updateOrderEmail(order.id, paymentData.payer.email);
+            order.customer_email = paymentData.payer.email;
           }
 
           if (orderStatus !== order.status) {
