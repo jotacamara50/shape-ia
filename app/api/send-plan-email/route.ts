@@ -41,12 +41,13 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(apiKey);
     const filename = `plano-alimentar-${userData.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
 
-    await resend.emails.send({
+    console.log("Enviando email para:", email);
+    const { data, error } = await resend.emails.send({
       from,
       to: email,
-      subject: "Seu plano alimentar está pronto!",
+      subject: "Seu plano alimentar esta pronto!",
       html: `
-        <p>Olá ${userData.name},</p>
+        <p>Ol? ${userData.name},</p>
         <p>Segue em anexo o seu plano alimentar personalizado em PDF.</p>
         <p>Obrigado por comprar com a Shape IA.</p>
       `,
@@ -58,7 +59,16 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    return NextResponse.json({ success: true });
+    if (error) {
+      console.error("Erro Resend:", error);
+      return NextResponse.json(
+        { error: error.message || "Erro ao enviar email" },
+        { status: 500 }
+      );
+    }
+
+    console.log("Email enviado:", data?.id);
+    return NextResponse.json({ success: true, id: data?.id });
   } catch (error) {
     console.error("Erro ao enviar email:", error);
     return NextResponse.json(

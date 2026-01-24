@@ -15,6 +15,9 @@ export default function SeuPlanoPage() {
   const [isPaid, setIsPaid] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadToken, setDownloadToken] = useState<string>("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const [emailMessage, setEmailMessage] = useState<string>("");
+  const [payerEmail, setPayerEmail] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos em segundos
   const checkoutRef = useState<HTMLDivElement | null>(null)[0];
   const router = useRouter();
@@ -88,8 +91,11 @@ export default function SeuPlanoPage() {
       setNutritionPlan(plan);
 
       if (payerEmail) {
+        setPayerEmail(payerEmail);
+        setEmailStatus("sending");
+        setEmailMessage(`Enviando o PDF para ${payerEmail}...`);
         try {
-          await fetch("/api/send-plan-email", {
+          const emailResponse = await fetch("/api/send-plan-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -98,8 +104,19 @@ export default function SeuPlanoPage() {
               userData,
             }),
           });
+
+          if (emailResponse.ok) {
+            setEmailStatus("sent");
+            setEmailMessage(`Enviamos o PDF para ${payerEmail}. Verifique o spam.`);
+          } else {
+            const emailData = await emailResponse.json().catch(() => ({}));
+            setEmailStatus("failed");
+            setEmailMessage(emailData?.error || "Não foi possível enviar o e-mail. Você pode baixar o PDF aqui.");
+          }
         } catch (emailError) {
           console.error("Erro ao enviar email:", emailError);
+          setEmailStatus("failed");
+          setEmailMessage("Não foi possível enviar o e-mail. Você pode baixar o PDF aqui.");
         }
       }
     } catch (error) {
@@ -193,9 +210,11 @@ export default function SeuPlanoPage() {
             BAIXAR MEU PDF
           </Button>
 
-          <p className="text-sm text-gray-500">
-            O arquivo também foi enviado para seu e-mail
-          </p>
+          {emailStatus !== "idle" && (
+            <p className="text-sm text-gray-500">
+              {emailMessage}
+            </p>
+          )}
 
           <div className="mt-8 pt-8 border-t">
             <p className="text-sm text-gray-600 mb-4">
