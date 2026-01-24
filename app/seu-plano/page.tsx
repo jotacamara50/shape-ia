@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckoutSection } from "@/components/CheckoutSection";
@@ -19,6 +19,7 @@ export default function SeuPlanoPage() {
   const [emailMessage, setEmailMessage] = useState<string>("");
   const [payerEmail, setPayerEmail] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos em segundos
+  const purchaseTrackedRef = useRef(false);
   const checkoutRef = useState<HTMLDivElement | null>(null)[0];
   const router = useRouter();
 
@@ -78,6 +79,15 @@ export default function SeuPlanoPage() {
     setDownloadToken(token);
     setIsPaid(true);
     setIsGenerating(true);
+
+    if (typeof window !== "undefined" && !purchaseTrackedRef.current) {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") {
+        const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
+        fbq("track", "Purchase", { value: price, currency: "BRL" });
+        purchaseTrackedRef.current = true;
+      }
+    }
 
     // Gerar o plano via API
     try {
