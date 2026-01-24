@@ -16,6 +16,7 @@ export default function SeuPlanoPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadToken, setDownloadToken] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos em segundos
+  const checkoutRef = useState<HTMLDivElement | null>(null)[0];
   const router = useRouter();
 
   // Countdown timer
@@ -49,6 +50,24 @@ export default function SeuPlanoPage() {
     }
     setUserData(JSON.parse(data));
   }, [router]);
+
+  // Scroll automático suave para o checkout após 1.5s (UX Mobile)
+  useEffect(() => {
+    if (isPaid) return;
+    
+    const scrollTimer = setTimeout(() => {
+      const checkoutElement = document.getElementById('checkout-section');
+      if (checkoutElement) {
+        checkoutElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 1500);
+
+    return () => clearTimeout(scrollTimer);
+  }, [isPaid]);
 
   const handlePaymentSuccess = useCallback(async (token: string) => {
     if (!userData) return;
@@ -217,7 +236,7 @@ export default function SeuPlanoPage() {
             className="lg:col-span-3"
           >
             {/* Folha A4 com conteúdo fake */}
-            <div className="relative bg-white shadow-2xl border-2 border-gray-200 rounded-lg overflow-hidden h-[400px] sm:h-[500px] lg:h-[600px]">
+            <div className="relative bg-white shadow-2xl border-2 border-gray-200 rounded-lg overflow-hidden h-[280px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
               {/* Conteúdo Fake do Documento */}
               <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 text-xs sm:text-sm">
                 {/* Cabeçalho */}
@@ -304,7 +323,15 @@ export default function SeuPlanoPage() {
               </div>
 
               {/* Overlay de Blur + Cadeado */}
-              <div className="absolute inset-0 backdrop-blur-md bg-white/20 flex items-center justify-center">
+              <div 
+                className="absolute inset-0 backdrop-blur-md bg-white/20 flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors"
+                onClick={() => {
+                  const checkoutElement = document.getElementById('checkout-section');
+                  if (checkoutElement) {
+                    checkoutElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
                 <div className="text-center space-y-3 p-4">
                   <motion.div
                     animate={{ scale: [1, 1.1, 1] }}
@@ -355,6 +382,7 @@ export default function SeuPlanoPage() {
 
           {/* Coluna 2: Oferta de Checkout (2 colunas) */}
           <motion.div
+            id="checkout-section"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
