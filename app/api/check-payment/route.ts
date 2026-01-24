@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
       status: order.status,
       isPaid: order.status === "paid",
       downloadToken: order.status === "paid" ? order.download_token : null,
+      payerEmail: order.customer_email,
     });
   } catch (error) {
     console.error("Erro ao verificar status:", error);

@@ -57,6 +57,15 @@ export async function mockUpdateOrderStatus(
   }
 }
 
+export async function mockUpdateOrderEmail(orderId: string, email: string) {
+  const order = mockOrders.get(orderId);
+  if (order) {
+    order.customer_email = email;
+    mockOrders.set(orderId, order);
+    console.log(`📧 Mock Order ${orderId} email updated`);
+  }
+}
+
 export async function mockGetOrderByToken(token: string) {
   for (const order of mockOrders.values()) {
     if (order.download_token === token) {

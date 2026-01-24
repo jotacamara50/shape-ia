@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { getOrderById, savePayment, updateOrderStatus } from "@/lib/db";
+import { getOrderById, savePayment, updateOrderStatus, updateOrderEmail } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const { orderId, formData } = await req.json();
+    const { orderId, formData, email } = await req.json();
     console.log("💳 Processando pagamento para pedido:", orderId);
 
     const accessToken = process.env.MP_ACCESS_TOKEN;
@@ -30,6 +30,11 @@ export async function POST(req: NextRequest) {
         { error: "Order not found" },
         { status: 404 }
       );
+    }
+
+    if (email && email !== order.customer_email) {
+      await updateOrderEmail(order.id, email);
+      order.customer_email = email;
     }
 
     const paymentMethodId =

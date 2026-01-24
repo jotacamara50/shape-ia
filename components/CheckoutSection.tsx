@@ -8,16 +8,12 @@ import confetti from "canvas-confetti";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 
 interface CheckoutSectionProps {
-  onPaymentSuccess: (downloadToken: string) => void;
+  onPaymentSuccess: (downloadToken: string, payerEmail?: string) => void;
   quizData?: any;
-  customButton?: {
-    text: string;
-    className?: string;
-  };
 }
 
 export const CheckoutSection = memo(function CheckoutSection(
-  { onPaymentSuccess, quizData, customButton }: CheckoutSectionProps
+  { onPaymentSuccess, quizData }: CheckoutSectionProps
 ) {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "approved" | "rejected">("pending");
   const [preferenceId, setPreferenceId] = useState<string>("");
@@ -28,10 +24,10 @@ export const CheckoutSection = memo(function CheckoutSection(
     qrCode?: string;
     ticketUrl?: string;
   } | null>(null);
+  const [payerEmail, setPayerEmail] = useState<string>("");
 
   const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
-  const isProduction = process.env.NODE_ENV === "production";
 
   useEffect(() => {
     // Inicializar Mercado Pago
@@ -95,7 +91,7 @@ export const CheckoutSection = memo(function CheckoutSection(
         if (data.isPaid) {
           clearInterval(interval);
           setPaymentStatus("approved");
-          
+
           // Efeito de confetes
           confetti({
             particleCount: 100,
@@ -104,7 +100,8 @@ export const CheckoutSection = memo(function CheckoutSection(
           });
 
           setTimeout(() => {
-            onPaymentSuccess(data.downloadToken);
+            const emailToUse = payerEmail || data.payerEmail;
+            onPaymentSuccess(data.downloadToken, emailToUse || undefined);
           }, 1000);
         }
       } catch (error) {
@@ -130,8 +127,9 @@ export const CheckoutSection = memo(function CheckoutSection(
       const formData = submission?.formData ?? submission;
       
       // Extrair email do payer data do Mercado Pago
-      const payerEmail = formData?.payer?.email || quizData?.email || "nao-informado@shapeia.com";
-      console.log("Email do pagador (MP):", payerEmail);
+      const mpPayerEmail = formData?.payer?.email || quizData?.email || "nao-informado@shapeia.com";
+      setPayerEmail(mpPayerEmail);
+      console.log("Email do pagador (MP):", mpPayerEmail);
       
       const response = await fetch("/api/process-payment", {
         method: "POST",
@@ -161,7 +159,7 @@ export const CheckoutSection = memo(function CheckoutSection(
 
       if (data?.status === "approved" && data?.downloadToken) {
         setPaymentStatus("approved");
-        onPaymentSuccess(data.downloadToken);
+        onPaymentSuccess(data.downloadToken, mpPayerEmail);
       } else if (data?.status === "rejected" || data?.status === "cancelled") {
         setPaymentStatus("rejected");
         setError("Pagamento recusado. Tente outro cartão ou método.");

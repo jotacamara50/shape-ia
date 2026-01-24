@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckoutSection } from "@/components/CheckoutSection";
@@ -69,7 +69,7 @@ export default function SeuPlanoPage() {
     return () => clearTimeout(scrollTimer);
   }, [isPaid]);
 
-  const handlePaymentSuccess = useCallback(async (token: string) => {
+  const handlePaymentSuccess = useCallback(async (token: string, payerEmail?: string) => {
     if (!userData) return;
 
     setDownloadToken(token);
@@ -86,21 +86,28 @@ export default function SeuPlanoPage() {
 
       const plan = await response.json();
       setNutritionPlan(plan);
+
+      if (payerEmail) {
+        try {
+          await fetch("/api/send-plan-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: payerEmail,
+              plan,
+              userData,
+            }),
+          });
+        } catch (emailError) {
+          console.error("Erro ao enviar email:", emailError);
+        }
+      }
     } catch (error) {
       console.error("Erro ao gerar plano:", error);
     } finally {
       setIsGenerating(false);
     }
   }, [userData]);
-
-  const checkoutButton = useMemo(
-    () => ({
-      text: "DESBLOQUEAR AGORA 🎫",
-      className:
-        "w-full py-4 sm:py-5 lg:py-6 text-base sm:text-lg lg:text-xl font-black bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 animate-pulse",
-    }),
-    []
-  );
 
   const handleDownloadPDF = async () => {
     if (!nutritionPlan || !downloadToken) return;
@@ -406,7 +413,6 @@ export default function SeuPlanoPage() {
               <CheckoutSection 
                 onPaymentSuccess={handlePaymentSuccess}
                 quizData={userData}
-                customButton={checkoutButton}
               />
 
               {/* Trust Badges */}

@@ -129,6 +129,20 @@ export async function updateOrderStatus(
   );
 }
 
+// Atualizar email do cliente
+export async function updateOrderEmail(orderId: string, email: string) {
+  if (mockDB.useMockDB) {
+    return mockDB.mockUpdateOrderEmail(orderId, email);
+  }
+
+  await pool.query(
+    `UPDATE orders
+     SET customer_email = $1
+     WHERE id = $2`,
+    [email, orderId]
+  );
+}
+
 // Buscar pedido por token
 export async function getOrderByToken(token: string) {
   if (mockDB.useMockDB) {
