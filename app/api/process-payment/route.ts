@@ -51,13 +51,25 @@ export async function POST(req: NextRequest) {
     console.log("💳 MP formData payment_type_id:", formData?.payment_type_id || null);
 
     const payerEmail = (email && isValidEmail(email)) ? email.trim() : order.customer_email;
+    const nameParts = (order.customer_name || "").trim().split(/\s+/).filter(Boolean);
+    const payerFirstName = nameParts[0] || "";
+    const payerLastName = nameParts.slice(1).join(" ");
+    const payer: Record<string, any> = {
+      ...(formData?.payer ?? {}),
+      email: payerEmail,
+    };
+
+    if (payerFirstName && !payer.first_name) {
+      payer.first_name = payerFirstName;
+    }
+    if (payerLastName && !payer.last_name) {
+      payer.last_name = payerLastName;
+    }
+
     const paymentBody: Record<string, any> = {
       transaction_amount: Number(order.amount),
       description: "Plano Alimentar Personalizado Shape IA",
-      payer: {
-        ...(formData?.payer ?? {}),
-        email: payerEmail,
-      },
+      payer,
       external_reference: order.id,
       metadata: {
         orderId: order.id,

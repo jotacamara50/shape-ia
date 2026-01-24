@@ -3,6 +3,7 @@
 import { useState, useEffect, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
@@ -19,6 +20,9 @@ export const CheckoutSection = memo(function CheckoutSection(
   const [preferenceId, setPreferenceId] = useState<string>("");
   const [orderId, setOrderId] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [pixData, setPixData] = useState<{
     qrCodeBase64?: string;
     qrCode?: string;
@@ -36,50 +40,12 @@ export const CheckoutSection = memo(function CheckoutSection(
     }
   }, [publicKey]);
 
-  // Criar pedido automaticamente ao carregar
-  useEffect(() => {
-    if (!quizData) return;
-    
-    const createOrder = async () => {
-      try {
-        console.log("Criando pedido...");
-        const response = await fetch("/api/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            quizData: quizData,
-            email: "temp@shapeia.com" // Email temporário, será substituído pelo do MP
-          }),
-        });
-        
-        const data = await response.json().catch(() => ({}));
-        console.log("Pedido criado:", data);
+  const validateEmail = (value: string) => {
+    const emailValue = value.trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+  };
 
-        if (!response.ok) {
-          console.error("Erro ao criar pedido:", data);
-          setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
-          return;
-        }
-
-        if (!data.preferenceId) {
-          console.error("Preference ID não retornado:", data);
-          setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
-          return;
-        }
-        
-        setPreferenceId(data.preferenceId);
-        setOrderId(data.orderId);
-        
-        // Iniciar polling para verificar status do pagamento
-        startPaymentPolling(data.orderId);
-      } catch (error) {
-        console.error("Erro ao criar pedido:", error);
-        setError("Erro ao carregar pagamento. Recarregue a página.");
-      }
-    };
-
-    createOrder();
-  }, [quizData]);
+  
 
   // Polling para verificar status do pagamento
   const startPaymentPolling = (orderId: string) => {
@@ -113,6 +79,66 @@ export const CheckoutSection = memo(function CheckoutSection(
     setTimeout(() => clearInterval(interval), 600000);
   };
 
+  const createOrder = async () => {
+    if (!quizData) {
+      setError("Dados do cliente não encontrados.");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setEmailError("Digite um email válido");
+      return;
+    }
+
+    if (!publicKey) {
+      setError("Pagamento indisponível no momento. Tente novamente mais tarde.");
+      return;
+    }
+
+    setEmailError("");
+    setError("");
+    setIsCreatingOrder(true);
+
+    try {
+      console.log("Criando pedido...");
+      const response = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quizData: quizData,
+          email: email.trim(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      console.log("Pedido criado:", data);
+
+      if (!response.ok) {
+        console.error("Erro ao criar pedido:", data);
+        setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
+        return;
+      }
+
+      if (!data.preferenceId) {
+        console.error("Preference ID não retornado:", data);
+        setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
+        return;
+      }
+
+      setPreferenceId(data.preferenceId);
+      setOrderId(data.orderId);
+      setPayerEmail(email.trim());
+
+      // Iniciar polling para verificar status do pagamento
+      startPaymentPolling(data.orderId);
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error);
+      setError("Erro ao carregar pagamento. Recarregue a página.");
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  };
+
   const onSubmit = async (submission: any) => {
     setPaymentStatus("processing");
     setError("");
@@ -126,8 +152,8 @@ export const CheckoutSection = memo(function CheckoutSection(
     try {
       const formData = submission?.formData ?? submission;
       
-      // Extrair email do payer data do Mercado Pago
-      const mpPayerEmail = formData?.payer?.email || quizData?.email || "";
+      // Extrair email do payer data do Mercado Pago (fallback para email digitado)
+      const mpPayerEmail = formData?.payer?.email || email || quizData?.email || "";
       setPayerEmail(mpPayerEmail);
       console.log("Email do pagador (MP):", mpPayerEmail || "nao-informado");
       
@@ -137,7 +163,7 @@ export const CheckoutSection = memo(function CheckoutSection(
         body: JSON.stringify({
           orderId,
           formData,
-          email: payerEmail, // Email extraído do MP
+          email: mpPayerEmail || email,
         }),
       });
 
@@ -215,11 +241,47 @@ export const CheckoutSection = memo(function CheckoutSection(
           </div>
         )}
 
+        {!preferenceId ? (
+          <div className="space-y-3 mb-4">
+            <Label htmlFor="email">Email para receber o plano</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError("");
+              }}
+              className={emailError ? "border-red-500" : undefined}
+            />
+            {emailError && (
+              <p className="text-sm text-red-500">{emailError}</p>
+            )}
+
+            <Button
+              onClick={createOrder}
+              className="w-full"
+              disabled={isCreatingOrder}
+            >
+              {isCreatingOrder ? "Carregando..." : "Continuar para pagamento"}
+            </Button>
+          </div>
+        ) : (
+          <div className="mb-4 text-sm text-gray-600">
+            Email para envio do PDF: <span className="font-semibold">{email}</span>
+          </div>
+        )}
+
         {/* Payment Brick - Mostra direto se tiver preferenceId */}
         {preferenceId ? (
           <div className="space-y-4">
             <Payment
-              initialization={{ amount: price, preferenceId }}
+              initialization={{
+                amount: price,
+                preferenceId,
+                payer: email ? { email } : undefined,
+              }}
               onSubmit={onSubmit}
               onError={onError}
               customization={{
@@ -292,10 +354,9 @@ export const CheckoutSection = memo(function CheckoutSection(
             )}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando opções de pagamento...</p>
-          </div>
+          <p className="text-xs text-center text-gray-500">
+            Informe seu email para liberar as opções de pagamento.
+          </p>
         )}
 
         {/* Métodos de Pagamento */}
