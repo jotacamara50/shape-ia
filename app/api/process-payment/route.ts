@@ -5,6 +5,7 @@ import { getOrderById, savePayment, updateOrderStatus } from "@/lib/db";
 export async function POST(req: NextRequest) {
   try {
     const { orderId, formData } = await req.json();
+    console.log("💳 Processando pagamento para pedido:", orderId);
 
     const accessToken = process.env.MP_ACCESS_TOKEN;
 
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     });
 
     const result = await response.json();
+    console.log("💳 Resultado Mercado Pago:", result?.status, result?.status_detail);
 
     if (!response.ok) {
       return NextResponse.json(

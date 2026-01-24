@@ -139,7 +139,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     if (!orderId) {
       setPaymentStatus("pending");
       setEmailError("Pedido não encontrado. Tente novamente.");
-      return;
+      return Promise.reject(new Error("Order ID missing"));
     }
 
     try {
@@ -157,7 +157,7 @@ export const CheckoutSection = memo(function CheckoutSection(
       if (!response.ok) {
         setPaymentStatus("pending");
         setEmailError(data?.error || "Erro ao processar pagamento. Tente novamente.");
-        return;
+        return Promise.reject(new Error(data?.error || "Payment failed"));
       }
 
       if (data?.qrCodeBase64 || data?.qrCode || data?.ticketUrl) {
@@ -171,11 +171,19 @@ export const CheckoutSection = memo(function CheckoutSection(
       if (data?.status === "approved" && data?.downloadToken) {
         setPaymentStatus("approved");
         onPaymentSuccess(data.downloadToken);
+      } else if (data?.status === "rejected" || data?.status === "cancelled") {
+        setPaymentStatus("rejected");
+        setEmailError("Pagamento recusado. Tente outro cartão ou método.");
+      } else {
+        setPaymentStatus("pending");
       }
+
+      return data;
     } catch (error) {
       console.error("Erro ao processar pagamento:", error);
       setPaymentStatus("pending");
       setEmailError("Erro ao processar pagamento. Tente novamente.");
+      return Promise.reject(error);
     }
   };
 
