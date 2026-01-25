@@ -20,6 +20,7 @@ export default function SeuPlanoPage() {
   const [payerEmail, setPayerEmail] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos em segundos
   const purchaseTrackedRef = useRef(false);
+  const paymentHandledRef = useRef(false);
   const checkoutRef = useState<HTMLDivElement | null>(null)[0];
   const router = useRouter();
 
@@ -75,6 +76,8 @@ export default function SeuPlanoPage() {
 
   const handlePaymentSuccess = useCallback(async (token: string, payerEmail?: string) => {
     if (!userData) return;
+    if (paymentHandledRef.current) return;
+    paymentHandledRef.current = true;
 
     setDownloadToken(token);
     setIsPaid(true);
