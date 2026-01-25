@@ -276,27 +276,29 @@ export const CheckoutSection = memo(function CheckoutSection(
         {/* Payment Brick - Mostra direto se tiver preferenceId */}
         {preferenceId ? (
           <div className="space-y-4">
-            <Payment
-              initialization={{
-                amount: price,
-                preferenceId,
-                payer: email ? { email } : undefined,
-              }}
-              onSubmit={onSubmit}
-              onError={onError}
-              customization={{
-                visual: {
-                  style: {
-                    theme: "default",
+            <div className="mp-brick-wrapper w-full max-w-full">
+              <Payment
+                initialization={{
+                  amount: price,
+                  preferenceId,
+                  payer: email ? { email } : undefined,
+                }}
+                onSubmit={onSubmit}
+                onError={onError}
+                customization={{
+                  visual: {
+                    style: {
+                      theme: "default",
+                    },
                   },
-                },
-                paymentMethods: {
-                  creditCard: "all",
-                  debitCard: "all",
-                  bankTransfer: "all",
-                },
-              }}
-            />
+                  paymentMethods: {
+                    creditCard: "all",
+                    debitCard: "all",
+                    bankTransfer: "all",
+                  },
+                }}
+              />
+            </div>
             
             <p className="text-xs text-center text-gray-500">
               Pagamento processado pelo Mercado Pago

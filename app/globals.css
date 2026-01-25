@@ -35,3 +35,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .mp-brick-wrapper,
+  .mp-brick-wrapper > div,
+  .mp-brick-wrapper iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+}
