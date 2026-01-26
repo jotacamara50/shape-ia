@@ -5,6 +5,7 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || "751219594728680";
+const gaId = process.env.NEXT_PUBLIC_GA_ID || "G-NGJKFG4P4Z";
 
 export const metadata: Metadata = {
   title: "Shape IA - Seu Plano Alimentar Personalizado",
@@ -33,6 +34,20 @@ export default function RootLayout({
                 alt=""
               />
             </noscript>
+          </>
+        )}
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${gaId}');`}
+            </Script>
           </>
         )}
         {children}
