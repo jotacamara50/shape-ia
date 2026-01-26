@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const host = req.headers.get("host");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const rawHost = forwardedHost || req.headers.get("host");
+  if (!rawHost) return NextResponse.next();
+
+  const host = rawHost.replace(/:\d+$/, "");
   if (!host) return NextResponse.next();
 
   const isLocalhost =
