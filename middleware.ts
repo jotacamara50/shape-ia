@@ -25,7 +25,8 @@ export function middleware(req: NextRequest) {
 
   const url = req.nextUrl.clone();
   url.protocol = "https:";
-  url.host = normalizedHost;
+  url.hostname = normalizedHost;
+  url.port = "";
 
   return NextResponse.redirect(url, 308);
 }
