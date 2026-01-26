@@ -29,6 +29,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     ticketUrl?: string;
   } | null>(null);
   const [payerEmail, setPayerEmail] = useState<string>("");
+  const [pixCopied, setPixCopied] = useState(false);
 
   const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
@@ -44,6 +45,9 @@ export const CheckoutSection = memo(function CheckoutSection(
     const emailValue = value.trim();
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
   };
+
+  const emailTrimmed = email.trim();
+  const isEmailValid = emailTrimmed.length > 0 && validateEmail(emailTrimmed);
 
   
 
@@ -243,6 +247,15 @@ export const CheckoutSection = memo(function CheckoutSection(
 
         {!preferenceId ? (
           <div className="space-y-3 mb-4">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+              <p className="text-sm font-semibold text-green-800">
+                Plano Alimentar Personalizado — R$ {price.toFixed(2)}
+              </p>
+              <p className="text-xs text-green-700">
+                Acesso vitalício + PDF enviado por email
+              </p>
+            </div>
+
             <Label htmlFor="email">Email para receber o plano</Label>
             <Input
               id="email"
@@ -255,6 +268,9 @@ export const CheckoutSection = memo(function CheckoutSection(
               }}
               className={emailError ? "border-red-500" : undefined}
             />
+            <p className="text-xs text-gray-500">
+              Usaremos esse email para enviar seu PDF. Sem spam.
+            </p>
             {emailError && (
               <p className="text-sm text-red-500">{emailError}</p>
             )}
@@ -262,7 +278,7 @@ export const CheckoutSection = memo(function CheckoutSection(
             <Button
               onClick={createOrder}
               className="w-full"
-              disabled={isCreatingOrder}
+              disabled={isCreatingOrder || !isEmailValid}
             >
               {isCreatingOrder ? "Carregando..." : "Continuar para pagamento"}
             </Button>
@@ -327,14 +343,18 @@ export const CheckoutSection = memo(function CheckoutSection(
                       <Input
                         readOnly
                         value={pixData.qrCode}
-                        className="text-xs"
+                        className={`text-xs ${pixCopied ? "bg-blue-50 border-blue-400" : ""}`}
                       />
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => navigator.clipboard.writeText(pixData.qrCode || "")}
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(pixData.qrCode || "");
+                          setPixCopied(true);
+                          setTimeout(() => setPixCopied(false), 1500);
+                        }}
                       >
-                        Copiar
+                        {pixCopied ? "Copiado!" : "Copiar"}
                       </Button>
                     </div>
                   </div>
