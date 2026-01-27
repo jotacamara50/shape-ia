@@ -128,7 +128,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 overflow-visible">
               <Image
-                src="/logo.png"
+                src="/logo2.png"
                 alt="Shape IA"
                 width={36}
                 height={36}
