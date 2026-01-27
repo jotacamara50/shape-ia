@@ -126,16 +126,12 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
       <div className="w-full bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 overflow-visible">
-              <Image
-                src="/logo2.png"
-                alt="Shape IA"
-                width={36}
-                height={36}
-                className="h-9 w-9 object-contain scale-[1.6] origin-left"
-                priority
-              />
-              <div>
+            <div className="flex items-center gap-3">
+              <div className="leading-tight">
+                <div className="text-lg font-black text-gray-900 tracking-tight">
+                  <span className="text-green-600">Shape</span>
+                  <span className="text-gray-900">IA</span>
+                </div>
                 <p className="text-sm text-gray-500">
                   Passo {step} de {TOTAL_STEPS}
                 </p>
