@@ -39,11 +39,16 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return !!formData.goal && !!formData.gender;
-      case 2: return !!formData.age && !!formData.weight && !!formData.height;
-      case 3: return !!formData.activityLevel;
-      case 4: return !!formData.name;
-      default: return false;
+      case 1:
+        return !!formData.goal && !!formData.gender;
+      case 2:
+        return !!formData.age && !!formData.weight && !!formData.height;
+      case 3:
+        return !!formData.activityLevel;
+      case 4:
+        return !!formData.name;
+      default:
+        return false;
     }
   };
 
