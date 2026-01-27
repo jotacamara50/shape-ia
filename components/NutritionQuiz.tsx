@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -125,11 +126,21 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
       <div className="w-full bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Shape IA</h1>
-              <p className="text-sm text-gray-500">
-                Passo {step} de {TOTAL_STEPS}
-              </p>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="Shape IA"
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain"
+                priority
+              />
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Shape IA</h1>
+                <p className="text-sm text-gray-500">
+                  Passo {step} de {TOTAL_STEPS}
+                </p>
+              </div>
             </div>
             <div className="w-40">
               <Progress value={progress} className="h-2" />

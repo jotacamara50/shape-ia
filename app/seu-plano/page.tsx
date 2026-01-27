@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { CheckoutSection } from "@/components/CheckoutSection";
 import { QuizData, NutritionPlan } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -266,7 +267,17 @@ export default function SeuPlanoPage() {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-green-600">🥗 Shape IA</h1>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Shape IA"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+              priority
+            />
+            <h1 className="text-xl sm:text-2xl font-bold text-green-600">🥗 Shape IA</h1>
+          </div>
         </div>
       </div>
 
