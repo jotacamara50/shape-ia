@@ -267,13 +267,13 @@ export default function SeuPlanoPage() {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-visible">
             <Image
               src="/logo.png"
               alt="Shape IA"
-              width={52}
-              height={52}
-              className="h-12 w-12 object-contain"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain scale-[1.6] origin-left"
               priority
             />
           </div>
@@ -492,7 +492,7 @@ export default function SeuPlanoPage() {
               {/* Card 1 - Fernanda Oliveira */}
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 overflow-visible">
                     <div className="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-lg">
                       FO
                     </div>
@@ -513,7 +513,7 @@ export default function SeuPlanoPage() {
               {/* Card 2 - Ricardo Mendes */}
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 overflow-visible">
                     <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
                       RM
                     </div>
@@ -534,7 +534,7 @@ export default function SeuPlanoPage() {
               {/* Card 3 - Patrícia Lima */}
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 overflow-visible">
                     <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
                       PL
                     </div>

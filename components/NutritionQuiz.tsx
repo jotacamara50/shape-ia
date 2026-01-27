@@ -126,13 +126,13 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
       <div className="w-full bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 overflow-visible">
               <Image
                 src="/logo.png"
                 alt="Shape IA"
-                width={52}
-                height={52}
-                className="h-12 w-12 object-contain"
+                width={36}
+                height={36}
+                className="h-9 w-9 object-contain scale-[1.6] origin-left"
                 priority
               />
               <div>
