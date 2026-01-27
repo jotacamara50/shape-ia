@@ -193,8 +193,15 @@ export function NutritionPlanPDF({ plan, userData }: PDFDocumentProps) {
             <View style={styles.analysisCard}>
               <Text style={styles.analysisLabel}>Objetivo</Text>
               <Text style={styles.analysisValue}>
-                {userData.goal === "emagrecer" ? "Emagrecimento" : 
-                 userData.goal === "massa" ? "Ganho de Massa" : "Saúde"}
+                {userData.goal === "emagrecer"
+                  ? "Emagrecimento"
+                  : userData.goal === "massa"
+                    ? "Ganho de Massa"
+                    : userData.goal === "reeducacao"
+                      ? "Reeducacao alimentar"
+                      : userData.goal === "manter"
+                        ? "Manter"
+                        : "Saude"}
               </Text>
             </View>
           </View>

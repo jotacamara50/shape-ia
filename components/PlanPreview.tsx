@@ -15,6 +15,10 @@ export function PlanPreview({ userData }: PlanPreviewProps) {
       return { text: "-3kg a -5kg", period: "30 dias", icon: TrendingDown };
     } else if (userData.goal === "massa") {
       return { text: "+2kg a +4kg", period: "30 dias", icon: TrendingDown };
+    } else if (userData.goal === "reeducacao") {
+      return { text: "Habitos mais saudaveis", period: "30 dias", icon: CheckCircle2 };
+    } else if (userData.goal === "manter") {
+      return { text: "Manter peso e energia", period: "30 dias", icon: CheckCircle2 };
     }
     return { text: "Melhora significativa", period: "30 dias", icon: CheckCircle2 };
   };

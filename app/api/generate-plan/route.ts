@@ -48,12 +48,23 @@ export async function POST(req: NextRequest) {
     else if (imc < 30) classificacaoIMC = "Sobrepeso";
     else classificacaoIMC = "Obesidade";
 
-    // System Prompt para a IA
+    const goalLabel =
+  userData.goal === "emagrecer"
+    ? "Emagrecimento"
+    : userData.goal === "massa"
+      ? "Ganho de Massa"
+      : userData.goal === "reeducacao"
+        ? "Reeducacao alimentar"
+        : userData.goal === "manter"
+          ? "Manter"
+          : "Saude";
+
+// System Prompt para a IA
     const systemPrompt = `Você é um nutricionista experiente. Crie um plano alimentar personalizado em formato JSON ESTRITO.
 
 DADOS DO CLIENTE:
 - Nome: ${userData.name}
-- Objetivo: ${userData.goal}
+- Objetivo: ${goalLabel}
 - Gênero: ${userData.gender}
 - Idade: ${userData.age} anos
 - Peso: ${userData.weight}kg

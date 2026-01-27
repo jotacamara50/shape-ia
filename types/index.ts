@@ -1,4 +1,4 @@
-export type Goal = "emagrecer" | "massa" | "saude";
+export type Goal = "emagrecer" | "massa" | "manter" | "reeducacao" | "saude";
 export type Gender = "masculino" | "feminino";
 export type ActivityLevel = "sedentario" | "leve" | "moderado" | "intenso" | "atleta";
 
