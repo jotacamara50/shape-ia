@@ -271,9 +271,8 @@ export default function SeuPlanoPage() {
             <div className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
               <span className="text-green-600">Shape</span><span className="text-gray-900">IA</span>
             </div>
-            <div className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-              <span className="text-green-600">Shape</span><span className="text-gray-900">IA</span>
-            </div>
+            
+            
           </div>
         </div>
       </div>
@@ -491,9 +490,7 @@ export default function SeuPlanoPage() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-            <div className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-              <span className="text-green-600">Shape</span><span className="text-gray-900">IA</span>
-            </div>
+            
                     <div className="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-lg">
                       FO
                     </div>
@@ -515,9 +512,7 @@ export default function SeuPlanoPage() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-            <div className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-              <span className="text-green-600">Shape</span><span className="text-gray-900">IA</span>
-            </div>
+            
                     <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
                       RM
                     </div>
@@ -539,9 +534,7 @@ export default function SeuPlanoPage() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-            <div className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-              <span className="text-green-600">Shape</span><span className="text-gray-900">IA</span>
-            </div>
+            
                     <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
                       PL
                     </div>
