@@ -13,13 +13,13 @@ import { ActivityLevel, Gender, Goal, QuizData } from "@/types";
 const TOTAL_STEPS = 4;
 
 const goalOptions: { value: Goal; label: string; subtitle: string }[] = [
-  { value: "emagrecer", label: "Emagrecer", subtitle: "Perder peso com saude" },
+  { value: "emagrecer", label: "Emagrecer", subtitle: "Perder peso com sa?de" },
   { value: "massa", label: "Ganhar massa", subtitle: "Hipertrofia e energia" },
   { value: "manter", label: "Manter peso", subtitle: "Estabilidade e controle" },
   {
     value: "reeducacao",
-    label: "Reeducacao alimentar",
-    subtitle: "Criar habitos melhores",
+    label: "Reeduca??o alimentar",
+    subtitle: "Criar h?bitos melhores",
   },
 ];
 
@@ -31,7 +31,7 @@ const genderOptions: { value: Gender; label: string }[] = [
 const activityOptions: { value: ActivityLevel; label: string; desc: string }[] = [
   {
     value: "sedentario",
-    label: "Sedentario",
+    label: "Sedent?rio",
     desc: "Pouca ou nenhuma atividade",
   },
   {
@@ -52,7 +52,7 @@ const activityOptions: { value: ActivityLevel; label: string; desc: string }[] =
   {
     value: "atleta",
     label: "Atleta",
-    desc: "Treinos diarios e alta carga",
+    desc: "Treinos di?rios e alta carga",
   },
 ];
 
@@ -150,7 +150,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                 className="bg-white rounded-2xl shadow-xl p-6 sm:p-8"
               >
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Qual e seu principal objetivo agora?
+                  Qual ? seu principal objetivo agora?
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Vamos personalizar seu plano de acordo com sua meta.
@@ -186,10 +186,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                 className="bg-white rounded-2xl shadow-xl p-6 sm:p-8"
               >
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Dados fisicos
+                  Dados f?sicos
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Idade, peso, altura e genero para calcular seu plano.
+                  Idade, peso, altura e g?nero para calcular seu plano.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -241,7 +241,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                 </div>
 
                 <div className="mt-6">
-                  <Label className="text-sm text-gray-600">Genero</Label>
+                  <Label className="text-sm text-gray-600">G?nero</Label>
                   <div className="mt-2 grid grid-cols-2 gap-3">
                     {genderOptions.map((opt) => (
                       <button
@@ -283,13 +283,13 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                 className="bg-white rounded-2xl shadow-xl p-6 sm:p-8"
               >
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Nivel de atividade
+                  N?vel de atividade
                 </h2>
                 <p className="text-gray-600 mb-2">
                   Isso impacta diretamente nas calorias recomendadas.
                 </p>
                 <p className="text-sm text-green-700 mb-6">
-                  Ja estamos montando seu plano...
+                  J? estamos montando seu plano...
                 </p>
 
                 <RadioGroup
@@ -331,10 +331,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                 className="bg-white rounded-2xl shadow-xl p-6 sm:p-8"
               >
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ultimas informacoes
+                  ?ltimas informa??es
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  Seu plano esta quase pronto. Falta so personalizar com seu
+                  Seu plano est? quase pronto. Falta s? personalizar com seu
                   nome.
                 </p>
 
@@ -364,7 +364,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                           restrictions: e.target.value,
                         }))
                       }
-                      placeholder="Ex: lactose, gluten, carne vermelha"
+                      placeholder="Ex: lactose, gl?ten, carne vermelha"
                     />
                   </div>
 
@@ -397,7 +397,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                           setData((prev) => ({ ...prev, wantsWorkout: false }))
                         }
                       >
-                        Nao
+                        N?o
                       </button>
                     </div>
                   </div>
