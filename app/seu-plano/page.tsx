@@ -271,12 +271,11 @@ export default function SeuPlanoPage() {
             <Image
               src="/logo.png"
               alt="Shape IA"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
+              width={52}
+              height={52}
+              className="h-12 w-12 object-contain"
               priority
             />
-            <h1 className="text-xl sm:text-2xl font-bold text-green-600">🥗 Shape IA</h1>
           </div>
         </div>
       </div>

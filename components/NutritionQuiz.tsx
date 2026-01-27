@@ -130,13 +130,12 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
               <Image
                 src="/logo.png"
                 alt="Shape IA"
-                width={40}
-                height={40}
-                className="h-10 w-10 object-contain"
+                width={52}
+                height={52}
+                className="h-12 w-12 object-contain"
                 priority
               />
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Shape IA</h1>
                 <p className="text-sm text-gray-500">
                   Passo {step} de {TOTAL_STEPS}
                 </p>
