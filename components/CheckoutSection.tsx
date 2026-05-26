@@ -1,91 +1,82 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useEffect, useState, memo } from "react";
+import Image from "next/image";
+import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
+import confetti from "canvas-confetti";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
-import confetti from "canvas-confetti";
-import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 
 interface CheckoutSectionProps {
   onPaymentSuccess: (downloadToken: string, payerEmail?: string) => void;
-  quizData?: any;
+  quizData?: unknown;
 }
 
-export const CheckoutSection = memo(function CheckoutSection(
-  { onPaymentSuccess, quizData }: CheckoutSectionProps
-) {
+export const CheckoutSection = memo(function CheckoutSection({
+  onPaymentSuccess,
+  quizData,
+}: CheckoutSectionProps) {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "approved" | "rejected">("pending");
-  const [preferenceId, setPreferenceId] = useState<string>("");
-  const [orderId, setOrderId] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [emailError, setEmailError] = useState<string>("");
+  const [preferenceId, setPreferenceId] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [pixData, setPixData] = useState<{
     qrCodeBase64?: string;
     qrCode?: string;
     ticketUrl?: string;
   } | null>(null);
-  const [payerEmail, setPayerEmail] = useState<string>("");
+  const [payerEmail, setPayerEmail] = useState("");
   const [pixCopied, setPixCopied] = useState(false);
 
   const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
 
   useEffect(() => {
-    // Inicializar Mercado Pago
     if (publicKey) {
       initMercadoPago(publicKey, { locale: "pt-BR" });
     }
   }, [publicKey]);
 
-  const validateEmail = (value: string) => {
-    const emailValue = value.trim();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
-  };
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  const isEmailValid = email.trim().length > 0 && validateEmail(email);
 
-  const emailTrimmed = email.trim();
-  const isEmailValid = emailTrimmed.length > 0 && validateEmail(emailTrimmed);
-
-  
-
-  // Polling para verificar status do pagamento
-  const startPaymentPolling = (orderId: string) => {
+  const startPaymentPolling = (nextOrderId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/check-payment?orderId=${orderId}`);
+        const response = await fetch(`/api/check-payment?orderId=${nextOrderId}`);
         const data = await response.json();
 
         if (data.isPaid) {
           clearInterval(interval);
           setPaymentStatus("approved");
 
-          // Efeito de confetes
           confetti({
             particleCount: 100,
             spread: 70,
-            origin: { y: 0.6 }
+            origin: { y: 0.6 },
           });
 
           setTimeout(() => {
             const emailToUse = payerEmail || data.payerEmail;
             onPaymentSuccess(data.downloadToken, emailToUse || undefined);
-          }, 1000);
+          }, 900);
         }
-      } catch (error) {
-        console.error("Erro ao verificar pagamento:", error);
+      } catch (pollingError) {
+        console.error("Erro ao verificar pagamento:", pollingError);
       }
-    }, 3000); // Verificar a cada 3 segundos
+    }, 3000);
 
-    // Limpar após 10 minutos
     setTimeout(() => clearInterval(interval), 600000);
   };
 
   const createOrder = async () => {
     if (!quizData) {
-      setError("Dados do cliente não encontrados.");
+      setError("Dados da análise não encontrados.");
       return;
     }
 
@@ -95,7 +86,7 @@ export const CheckoutSection = memo(function CheckoutSection(
     }
 
     if (!publicKey) {
-      setError("Pagamento indisponível no momento. Tente novamente mais tarde.");
+      setError("Pagamento indisponível no momento. Tente novamente em instantes.");
       return;
     }
 
@@ -104,46 +95,35 @@ export const CheckoutSection = memo(function CheckoutSection(
     setIsCreatingOrder(true);
 
     try {
-      console.log("Criando pedido...");
       const response = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          quizData: quizData,
+          quizData,
           email: email.trim(),
         }),
       });
 
       const data = await response.json().catch(() => ({}));
-      console.log("Pedido criado:", data);
 
-      if (!response.ok) {
-        console.error("Erro ao criar pedido:", data);
-        setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
-        return;
-      }
-
-      if (!data.preferenceId) {
-        console.error("Preference ID não retornado:", data);
-        setError(data?.error || "Erro ao carregar pagamento. Recarregue a página.");
+      if (!response.ok || !data.preferenceId) {
+        setError(data?.error || "Erro ao preparar seu checkout. Recarregue a página.");
         return;
       }
 
       setPreferenceId(data.preferenceId);
       setOrderId(data.orderId);
       setPayerEmail(email.trim());
-
-      // Iniciar polling para verificar status do pagamento
       startPaymentPolling(data.orderId);
-    } catch (error) {
-      console.error("Erro ao criar pedido:", error);
-      setError("Erro ao carregar pagamento. Recarregue a página.");
+    } catch (requestError) {
+      console.error("Erro ao criar pedido:", requestError);
+      setError("Erro ao preparar seu checkout. Recarregue a página.");
     } finally {
       setIsCreatingOrder(false);
     }
   };
 
-  const onSubmit = async (submission: any) => {
+  const onSubmit = async (submission: unknown) => {
     setPaymentStatus("processing");
     setError("");
 
@@ -154,13 +134,19 @@ export const CheckoutSection = memo(function CheckoutSection(
     }
 
     try {
-      const formData = submission?.formData ?? submission;
-      
-      // Extrair email do payer data do Mercado Pago (fallback para email digitado)
-      const mpPayerEmail = formData?.payer?.email || email || quizData?.email || "";
+      const formData =
+        typeof submission === "object" && submission !== null && "formData" in submission
+          ? (submission as { formData: unknown }).formData
+          : submission;
+
+      const payer =
+        typeof formData === "object" && formData !== null && "payer" in formData
+          ? (formData as { payer?: { email?: string } }).payer
+          : undefined;
+
+      const mpPayerEmail = payer?.email || email || "";
       setPayerEmail(mpPayerEmail);
-      console.log("Email do pagador (MP):", mpPayerEmail || "nao-informado");
-      
+
       const response = await fetch("/api/process-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -193,8 +179,7 @@ export const CheckoutSection = memo(function CheckoutSection(
 
       if (data?.status === "approved" && data?.downloadToken) {
         setPaymentStatus("approved");
-        const resolvedEmail = data?.payerEmail || mpPayerEmail;
-        onPaymentSuccess(data.downloadToken, resolvedEmail);
+        onPaymentSuccess(data.downloadToken, data?.payerEmail || mpPayerEmail);
       } else if (data?.status === "rejected" || data?.status === "cancelled") {
         setPaymentStatus("rejected");
         setError("Pagamento recusado. Tente outro cartão ou método.");
@@ -203,215 +188,192 @@ export const CheckoutSection = memo(function CheckoutSection(
       }
 
       return data;
-    } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
+    } catch (paymentError) {
+      console.error("Erro ao processar pagamento:", paymentError);
       setPaymentStatus("pending");
       setError("Erro ao processar pagamento. Tente novamente.");
-      return Promise.reject(error);
+      return Promise.reject(paymentError);
     }
   };
 
-  const onError = (error: any) => {
-    console.error("Erro no Payment Brick:", error);
+  const onError = (brickError: unknown) => {
+    console.error("Erro no Payment Brick:", brickError);
     setError("Erro ao carregar o checkout. Recarregue a página.");
   };
 
   if (paymentStatus === "approved") {
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="bg-green-100 text-green-600 rounded-full p-4 inline-block mb-4">
-          <CheckCircle2 className="w-12 h-12" />
+      <div className="rounded-[1.7rem] border border-emerald-400/20 bg-emerald-400/10 p-6 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+          <CheckCircle2 className="h-7 w-7" />
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Pagamento Aprovado! 🎉
-        </h3>
-        <p className="text-gray-600 mb-6">
-          Redirecionando para download...
+        <h3 className="mt-4 text-xl font-semibold text-white">Pagamento aprovado</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Redirecionando para o seu relatório personalizado.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Escolha como pagar:
-        </h3>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {!preferenceId ? (
-          <div className="space-y-3 mb-4">
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-              <p className="text-sm font-semibold text-green-800">
-                Plano Alimentar Personalizado — R$ {price.toFixed(2)}
-              </p>
-              <p className="text-xs text-green-700">
-                Acesso vitalício + PDF enviado por email
-              </p>
-            </div>
-
-            <Label htmlFor="email">Email para receber o plano</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (emailError) setEmailError("");
-              }}
-              className={emailError ? "border-red-500" : undefined}
-            />
-            <p className="text-xs text-gray-500">
-              Usaremos esse email para enviar seu PDF. Sem spam.
+    <div className="space-y-5">
+      <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
+          <div>
+            <p className="font-medium text-white">Acesso liberado após confirmação</p>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              Informe seu melhor email para receber o PDF e continuar no checkout seguro.
             </p>
-            {emailError && (
-              <p className="text-sm text-red-500">{emailError}</p>
-            )}
-
-            <Button
-              onClick={createOrder}
-              className="w-full"
-              disabled={isCreatingOrder || !isEmailValid}
-            >
-              {isCreatingOrder ? "Carregando..." : "Continuar para pagamento"}
-            </Button>
-          </div>
-        ) : (
-          <div className="mb-4 text-sm text-gray-600">
-            Email para envio do PDF: <span className="font-semibold">{email}</span>
-          </div>
-        )}
-
-        {/* Payment Brick - Mostra direto se tiver preferenceId */}
-        {preferenceId ? (
-          <div className="space-y-4">
-            <div className="mp-brick-wrapper w-full max-w-full">
-              <Payment
-                initialization={{
-                  amount: price,
-                  preferenceId,
-                  payer: email ? { email } : undefined,
-                }}
-                onSubmit={onSubmit}
-                onError={onError}
-                customization={{
-                  visual: {
-                    style: {
-                      theme: "default",
-                    },
-                  },
-                  paymentMethods: {
-                    creditCard: "all",
-                    debitCard: "all",
-                    bankTransfer: "all",
-                  },
-                }}
-              />
-            </div>
-            
-            <p className="text-xs text-center text-gray-500">
-              Pagamento processado pelo Mercado Pago
-            </p>
-
-            {pixData && (
-              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-gray-800 mb-3">
-                  Pix gerado — pague para liberar o acesso
-                </p>
-
-                {pixData.qrCodeBase64 && (
-                  <div className="flex justify-center mb-3">
-                    <img
-                      src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                      alt="QR Code Pix"
-                      className="h-48 w-48"
-                    />
-                  </div>
-                )}
-
-                {pixData.qrCode && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-600">Copie o código Pix:</p>
-                    <div className="flex gap-2">
-                      <Input
-                        readOnly
-                        value={pixData.qrCode}
-                        className={`text-xs ${pixCopied ? "bg-blue-50 border-blue-400" : ""}`}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(pixData.qrCode || "");
-                          setPixCopied(true);
-                          setTimeout(() => setPixCopied(false), 1500);
-                        }}
-                      >
-                        {pixCopied ? "Copiado!" : "Copiar"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {pixData.ticketUrl && (
-                  <div className="mt-3">
-                    <a
-                      href={pixData.ticketUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-green-700 underline"
-                    >
-                      Abrir instruções do Pix
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs text-center text-gray-500">
-            Informe seu email para liberar as opções de pagamento.
-          </p>
-        )}
-
-        {/* Métodos de Pagamento */}
-        <div className="mt-6 pt-6 border-t">
-          <p className="text-sm text-center text-gray-600 mb-3">
-            Aceitamos PIX e Cartão de Crédito
-          </p>
-          <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mr-2">
-                💳
-              </div>
-              <span>Cartão</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mr-2">
-                🔑
-              </div>
-              <span>PIX</span>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Selos de Segurança */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-        <p className="text-sm font-semibold text-green-800 mb-1">
-          🔒 Garantia de Satisfação
+      {error ? (
+        <div className="rounded-[1.4rem] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+          {error}
+        </div>
+      ) : null}
+
+      {!preferenceId ? (
+        <div className="space-y-4 rounded-[1.7rem] border border-white/10 bg-white/5 p-5">
+          <div className="rounded-[1.3rem] border border-cyan-400/15 bg-cyan-400/10 p-4">
+            <p className="text-sm font-medium text-cyan-100">Plano alimentar personalizado — R$ {price.toFixed(2)}</p>
+            <p className="mt-1 text-xs text-cyan-50/80">
+              Relatório em PDF, lista de compras, cronograma e estratégias alimentares.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="checkout-email" className="text-sm text-slate-200">
+              Email para receber o relatório
+            </Label>
+            <Input
+              id="checkout-email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (emailError) setEmailError("");
+              }}
+              className={`h-12 rounded-2xl border-white/10 bg-white text-slate-950 ${
+                emailError ? "border-rose-400" : ""
+              }`}
+            />
+            {emailError ? <p className="text-sm text-rose-200">{emailError}</p> : null}
+            <p className="text-xs text-slate-400">Sem spam. Usaremos esse email apenas para entrega e acesso.</p>
+          </div>
+
+          <Button
+            onClick={createOrder}
+            disabled={isCreatingOrder || !isEmailValid}
+            className="h-12 w-full rounded-2xl bg-white text-slate-950 hover:bg-slate-100"
+          >
+            {isCreatingOrder ? "Preparando checkout..." : "Continuar para pagamento"}
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-[1.4rem] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+          Email para entrega: <span className="font-medium text-white">{email}</span>
+        </div>
+      )}
+
+      {preferenceId ? (
+        <div className="space-y-4 rounded-[1.7rem] border border-white/10 bg-white p-4 text-slate-950">
+          <div className="mp-brick-wrapper w-full max-w-full">
+            <Payment
+              initialization={{
+                amount: price,
+                preferenceId,
+                payer: email ? { email } : undefined,
+              }}
+              onSubmit={onSubmit}
+              onError={onError}
+              customization={{
+                visual: {
+                  style: {
+                    theme: "default",
+                  },
+                },
+                paymentMethods: {
+                  creditCard: "all",
+                  debitCard: "all",
+                  bankTransfer: "all",
+                },
+              }}
+            />
+          </div>
+
+          <p className="text-center text-xs text-slate-500">Pagamento processado pelo Mercado Pago</p>
+
+          {pixData ? (
+            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-950">Pix gerado</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Ao confirmar o Pix, seu acesso é liberado automaticamente.
+              </p>
+
+              {pixData.qrCodeBase64 ? (
+                <div className="mt-4 flex justify-center">
+                  <Image
+                    src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                    alt="QR Code Pix"
+                    width={192}
+                    height={192}
+                    unoptimized
+                    className="h-48 w-48 rounded-2xl border border-slate-200 bg-white p-2"
+                  />
+                </div>
+              ) : null}
+
+              {pixData.qrCode ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-slate-500">Copie o código Pix</p>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={pixData.qrCode}
+                      className={`h-11 rounded-2xl bg-white text-xs ${
+                        pixCopied ? "border-sky-400 bg-sky-50" : "border-slate-200"
+                      }`}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(pixData.qrCode || "");
+                        setPixCopied(true);
+                        setTimeout(() => setPixCopied(false), 1500);
+                      }}
+                      className="h-11 rounded-2xl border-slate-200"
+                    >
+                      {pixCopied ? "Copiado" : "Copiar"}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {pixData.ticketUrl ? (
+                <div className="mt-3">
+                  <a
+                    href={pixData.ticketUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-sky-700 underline"
+                  >
+                    Abrir instruções do Pix
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-center text-xs text-slate-400">
+          As opções de pagamento são liberadas após o email ser informado.
         </p>
-        <p className="text-xs text-green-700">
-          Se não ficar satisfeito, devolvemos seu dinheiro em até 7 dias
-        </p>
-      </div>
+      )}
     </div>
   );
 });

@@ -1,109 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { QuizData, NutritionPlan } from "@/types";
+import {
+  buildAnalysis,
+  buildFallbackPlan,
+  getActivityLabel,
+  getBodyConcernLabel,
+  getChallengeLabel,
+  getConsistencyLabel,
+  getDietHistoryLabel,
+  getGoalLabel,
+  getHungerWindowLabel,
+  getRoutineImpactLabel,
+} from "@/lib/analysis";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY não configurada");
+  }
+
+  return new OpenAI({ apiKey });
+}
 
 export async function POST(req: NextRequest) {
   try {
     const userData: QuizData = await req.json();
+    const analysis = buildAnalysis(userData);
+    const fallbackPlan = buildFallbackPlan(userData);
 
-    // Calcular IMC e TMB
-    const heightInMeters = userData.height / 100;
-    const imc = userData.weight / Math.pow(heightInMeters, 2);
-    
-    // Fórmula de Harris-Benedict para TMB
-    let tmb: number;
-    if (userData.gender === "masculino") {
-      tmb = 88.362 + (13.397 * userData.weight) + (4.799 * userData.height) - (5.677 * userData.age);
-    } else {
-      tmb = 447.593 + (9.247 * userData.weight) + (3.098 * userData.height) - (4.330 * userData.age);
-    }
-
-    // Multiplicador de atividade
-    const activityMultipliers = {
-      sedentario: 1.2,
-      leve: 1.375,
-      moderado: 1.55,
-      intenso: 1.725,
-      atleta: 1.9,
-    };
-
-    const caloriasRecomendadas = Math.round(tmb * activityMultipliers[userData.activityLevel]);
-
-    // Ajustar calorias baseado no objetivo
-    let caloriasFinais = caloriasRecomendadas;
-    if (userData.goal === "emagrecer") {
-      caloriasFinais = Math.round(caloriasRecomendadas * 0.85); // Déficit de 15%
-    } else if (userData.goal === "massa") {
-      caloriasFinais = Math.round(caloriasRecomendadas * 1.15); // Superávit de 15%
-    }
-
-    // Classificação IMC
-    let classificacaoIMC = "";
-    if (imc < 18.5) classificacaoIMC = "Abaixo do peso";
-    else if (imc < 25) classificacaoIMC = "Peso normal";
-    else if (imc < 30) classificacaoIMC = "Sobrepeso";
-    else classificacaoIMC = "Obesidade";
-
-    const goalLabel =
-  userData.goal === "emagrecer"
-    ? "Emagrecimento"
-    : userData.goal === "massa"
-      ? "Ganho de Massa"
-      : userData.goal === "reeducacao"
-        ? "Reeducacao alimentar"
-        : userData.goal === "manter"
-          ? "Manter"
-          : "Saude";
-
-// System Prompt para a IA
-    const systemPrompt = `Você é um nutricionista experiente. Crie um plano alimentar personalizado em formato JSON ESTRITO.
+    const systemPrompt = `Você é um especialista em nutrição comportamental e planejamento alimentar. Gere um plano alimentar personalizado em JSON estrito.
 
 DADOS DO CLIENTE:
 - Nome: ${userData.name}
-- Objetivo: ${goalLabel}
+- Objetivo: ${getGoalLabel(userData.goal)}
 - Gênero: ${userData.gender}
 - Idade: ${userData.age} anos
-- Peso: ${userData.weight}kg
-- Altura: ${userData.height}cm
-- IMC: ${imc.toFixed(1)} (${classificacaoIMC})
-- Nível de Atividade: ${userData.activityLevel}
-- Calorias Recomendadas: ${caloriasFinais} kcal/dia
+- Peso: ${userData.weight} kg
+- Altura: ${userData.height} cm
+- IMC: ${analysis.imc} (${analysis.classificacao})
+- TMB: ${analysis.tmb} kcal
+- Calorias recomendadas: ${analysis.caloriasRecomendadas} kcal/dia
+- Nível de atividade: ${getActivityLabel(userData.activityLevel)}
+- Área corporal sensível: ${getBodyConcernLabel(userData.bodyConcern)}
+- Maior desafio: ${getChallengeLabel(userData.biggestChallenge)}
+- Fome emocional: ${userData.emotionalHunger}
+- Histórico de dietas: ${getDietHistoryLabel(userData.dietsTried)}
+- Sentimento ao se olhar no espelho: ${userData.mirrorFeeling}
+- Dificuldade de constância: ${getConsistencyLabel(userData.consistencyDifficulty)}
+- Horário de maior fome: ${getHungerWindowLabel(userData.hungerTime)}
+- Impacto da rotina: ${getRoutineImpactLabel(userData.routineImpact)}
 - Restrições: ${userData.restrictions || "Nenhuma"}
 - Deseja treino: ${userData.wantsWorkout ? "Sim" : "Não"}
 
-REGRAS ESTRITAS DE FORMATAÇÃO:
-1. CAPITALIZAÇÃO: Todo item de alimento DEVE começar com Letra Maiúscula
-   ✅ CORRETO: "Arroz integral (150g)", "Peito de frango grelhado (120g)"
-   ❌ ERRADO: "arroz integral", "peito de frango"
+REGRAS:
+1. Retorne apenas JSON válido.
+2. Cardápio com 7 dias completos, de Segunda a Domingo.
+3. Cada dia deve conter: cafe, almoco, jantar, lanches.
+4. Inclua quantidades aproximadas em todos os itens.
+5. A listaCompras deve ter as categorias: Hortifruti, Proteínas, Grãos e Cereais, Laticínios, Outros.
+6. Não repita itens na listaCompras.
+7. Inclua substituicoes com 3 trocas inteligentes e motivo.
+8. Inclua receitas com 3 receitas simples, ingredientes e preparo.
+9. Inclua checklist com 5 itens de execução.
+10. Inclua metas com 3 metas objetivas.
+11. Respeite integralmente as restrições e o objetivo do cliente.
+12. ${userData.wantsWorkout ? "Inclua treino simples com 3 a 5 dias." : "Não inclua treino."}
 
-2. LISTA DE COMPRAS CATEGORIZADA:
-   - Organize por categorias: "Hortifruti", "Proteínas", "Grãos e Cereais", "Laticínios", "Outros"
-   - NÃO repita itens (ex: se banana aparece 3x, coloque apenas "Banana" uma vez)
-   - Capitalize todos os itens da lista
-
-3. ESTRUTURA DO CARDÁPIO:
-   - 7 dias completos (Segunda a Domingo)
-   - Cada dia: café, almoço, jantar, lanches
-   - Inclua quantidades aproximadas (ex: "150g", "1 unidade")
-   - Total aproximado de ${caloriasFinais} kcal/dia
-
-4. RESPEITE as restrições alimentares do cliente
-5. ${userData.wantsWorkout ? "INCLUA um plano de treino simples com 3-5 dias por semana" : "NÃO inclua treino"}
-
-EXEMPLO DE ESTRUTURA DA LISTA DE COMPRAS:
-"listaCompras": {
-  "Hortifruti": ["Banana", "Maçã", "Alface", "Tomate"],
-  "Proteínas": ["Peito de frango", "Ovos", "Filé de tilápia"],
-  "Grãos e Cereais": ["Arroz integral", "Aveia", "Pão integral"],
-  "Laticínios": ["Leite desnatado", "Iogurte natural", "Queijo branco"],
-  "Outros": ["Azeite de oliva", "Sal rosa", "Temperos naturais"]
-}
-
-Retorne APENAS um JSON válido neste formato exato:
+FORMATO EXATO:
 {
   "cardapioSemanal": {
     "Segunda": {
@@ -111,9 +76,7 @@ Retorne APENAS um JSON válido neste formato exato:
       "almoco": ["Item 1 (quantidade)", "Item 2 (quantidade)"],
       "jantar": ["Item 1 (quantidade)", "Item 2 (quantidade)"],
       "lanches": ["Item 1 (quantidade)", "Item 2 (quantidade)"]
-    },
-    "Terça": { ... },
-    ... (até Domingo)
+    }
   },
   "listaCompras": {
     "Hortifruti": ["Item 1", "Item 2"],
@@ -121,38 +84,54 @@ Retorne APENAS um JSON válido neste formato exato:
     "Grãos e Cereais": ["Item 1", "Item 2"],
     "Laticínios": ["Item 1", "Item 2"],
     "Outros": ["Item 1", "Item 2"]
-  }${userData.wantsWorkout ? ',\n  "treino": { "dias": ["Segunda", "Quarta", "Sexta"], "exercicios": [{ "nome": "Exercício", "series": "3x12", "obs": "observação" }] }' : ''}
+  },
+  "substituicoes": [
+    { "de": "Opção 1", "para": "Opção 2", "motivo": "Motivo" }
+  ],
+  "receitas": [
+    {
+      "nome": "Receita 1",
+      "objetivo": "Objetivo",
+      "ingredientes": ["Ingrediente 1", "Ingrediente 2"],
+      "preparo": ["Passo 1", "Passo 2"]
+    }
+  ],
+  "checklist": ["Item 1", "Item 2", "Item 3"],
+  "metas": ["Meta 1", "Meta 2", "Meta 3"]${userData.wantsWorkout ? ',\n  "treino": { "dias": ["Segunda", "Quarta", "Sexta"], "exercicios": [{ "nome": "Exercício", "series": "3x12", "obs": "Observação" }] }' : ""}
 }`;
 
-    // Chamar OpenAI
+    const openai = getOpenAIClient();
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: "Gere o plano alimentar agora." }
+        { role: "user", content: "Gere o plano alimentar agora." },
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
     });
 
     const planContent = completion.choices[0].message.content;
+
     if (!planContent) {
       throw new Error("Resposta vazia da IA");
     }
 
     const generatedPlan = JSON.parse(planContent);
 
-    // Montar resposta completa
     const nutritionPlan: NutritionPlan = {
-      analise: {
-        imc: parseFloat(imc.toFixed(1)),
-        classificacao: classificacaoIMC,
-        tmb: Math.round(tmb),
-        caloriasRecomendadas: caloriasFinais,
-      },
+      analise: analysis,
       cardapioSemanal: generatedPlan.cardapioSemanal,
       listaCompras: generatedPlan.listaCompras,
-      ...(userData.wantsWorkout && generatedPlan.treino ? { treino: generatedPlan.treino } : {}),
+      cronograma: generatedPlan.cronograma || fallbackPlan.cronograma,
+      substituicoes: generatedPlan.substituicoes || fallbackPlan.substituicoes,
+      receitas: generatedPlan.receitas || fallbackPlan.receitas,
+      checklist: generatedPlan.checklist || fallbackPlan.checklist,
+      metas: generatedPlan.metas || fallbackPlan.metas,
+      ...(userData.wantsWorkout && generatedPlan.treino
+        ? { treino: generatedPlan.treino }
+        : {}),
     };
 
     return NextResponse.json(nutritionPlan);
