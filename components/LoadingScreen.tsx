@@ -2,23 +2,15 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Leaf } from "lucide-react";
+import { Leaf, ShieldAlert, Cpu, BarChart3, Activity } from "lucide-react";
 
 const loadingStages = [
-  { progress: 12, message: "Organizando suas respostas…" },
-  { progress: 28, message: "Identificando seus padrões…" },
-  { progress: 48, message: "Mapeando seus hábitos alimentares…" },
-  { progress: 68, message: "Preparando sua análise…" },
-  { progress: 84, message: "Personalizando recomendações…" },
-  { progress: 100, message: "Finalizando seu resultado…" },
-];
-
-const liveMessages = [
-  "Analisando seus horários de fome…",
-  "Cruzando rotina e hábitos…",
-  "Identificando seus desafios…",
-  "Preparando sugestões para você…",
-  "Quase pronto…",
+  { progress: 15, message: "Validando integridade das respostas...", icon: Leaf },
+  { progress: 38, message: "Ajustando coeficientes metabólicos (Harris-Benedict)...", icon: Activity },
+  { progress: 59, message: "Identificando janelas críticas de cortisol e compulsão...", icon: ShieldAlert },
+  { progress: 76, message: "Isolando restrições e calculando quebra de macronutrientes...", icon: BarChart3 },
+  { progress: 91, message: "Compilando checklist comportamental e receitas em PDF...", icon: Cpu },
+  { progress: 100, message: "Criptografando relatório final do usuário...", icon: Leaf },
 ];
 
 interface LoadingScreenProps {
@@ -28,7 +20,9 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ onComplete, userName }: LoadingScreenProps) {
   const [stageIndex, setStageIndex] = useState(0);
-  const [messageIndex, setMessageIndex] = useState(0);
+  // Estados simulados para gráficos dinâmicos de app premium
+  const [metricBasal, setMetricBasal] = useState(1120);
+  const [metricDeficit, setMetricDeficit] = useState(0);
 
   useEffect(() => {
     const stageInterval = setInterval(() => {
@@ -36,134 +30,126 @@ export function LoadingScreen({ onComplete, userName }: LoadingScreenProps) {
         if (current < loadingStages.length - 1) return current + 1;
         return current;
       });
-    }, 1700);
-
-    const messageInterval = setInterval(() => {
-      setMessageIndex((current) => (current + 1) % liveMessages.length);
     }, 1600);
 
-    const timer = setTimeout(() => {
+    // Animando pequenos contadores numéricos para dar dinamismo de software ativo
+    const counterInterval = setInterval(() => {
+      setMetricBasal((prev) => (prev < 1650 ? prev + 11 : prev));
+      setMetricDeficit((prev) => (prev < 450 ? prev + 4 : prev));
+    }, 40);
+
+    const timeoutTimer = setTimeout(() => {
       onComplete();
     }, 9800);
 
     return () => {
       clearInterval(stageInterval);
-      clearInterval(messageInterval);
-      clearTimeout(timer);
+      clearInterval(counterInterval);
+      clearTimeout(timeoutTimer);
     };
   }, [onComplete]);
 
   const currentStage = loadingStages[stageIndex];
+  const CurrentIcon = currentStage.icon;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#fafaf8] px-5 py-10">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="mb-10 flex items-center justify-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sage-600">
-            <Leaf className="h-4 w-4 text-white" />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#fafaf8] px-4 py-8 selection:bg-stone-200">
+      <div className="w-full max-w-md bg-white border border-stone-200/60 shadow-wellness-md rounded-[2rem] p-6 sm:p-8 text-center">
+        
+        {/* Marca Superior Minimalista */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-950">
+            <Leaf className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-base font-semibold text-stone-900">Shape AI</span>
+          <span className="text-sm font-bold text-stone-900 tracking-tight">Shape AI</span>
         </div>
 
-        {/* Ícone pulsante central */}
-        <div className="flex justify-center">
-          <div className="relative flex h-20 w-20 items-center justify-center">
+        {/* Animação do Scanner Central */}
+        <div className="flex justify-center my-6">
+          <div className="relative flex h-24 w-24 items-center justify-center bg-stone-50 rounded-2xl border border-stone-100 shadow-inner">
             <motion.div
-              animate={{ scale: [1, 1.08, 1] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute inset-0 rounded-full bg-sage-100"
+              animate={{ 
+                scale: [1, 1.15, 1],
+                rotate: [0, 90, 180, 270, 360],
+                borderRadius: ["30%", "50%", "30%"]
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              className="absolute h-16 w-16 bg-stone-950/5 border border-stone-950/10"
             />
             <motion.div
-              animate={{ scale: [1, 1.14, 1], opacity: [0.4, 0.15, 0.4] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-              className="absolute inset-[-8px] rounded-full bg-sage-100"
-            />
-            <Leaf className="relative h-8 w-8 text-sage-600" />
+              animate={{ opacity: [0.4, 0.9, 0.4] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="absolute"
+            >
+              <CurrentIcon className="h-8 w-8 text-stone-950 stroke-[1.8]" />
+            </motion.div>
           </div>
         </div>
 
-        {/* Título */}
-        <div className="mt-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-[-0.025em] text-stone-900">
-            {userName ? `${userName}, sua análise está sendo preparada.` : "Sua análise está sendo preparada."}
+        {/* Textos de Alinhamento */}
+        <div className="space-y-2 mt-4">
+          <h1 className="text-xl font-bold tracking-tight text-stone-900 leading-tight">
+            {userName ? `${userName}, nossa IA está processando seu perfil.` : "Processando perfil metabólico."}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-stone-400">
-            Com base nas suas respostas, estamos organizando suas recomendações personalizadas.
+          <p className="text-xs font-medium text-stone-400 max-w-xs mx-auto leading-relaxed">
+            Seus desequilíbrios calóricos e gatilhos de rotina estão sendo cruzados com nossa base médica de dados.
           </p>
         </div>
 
-        {/* Progress */}
-        <div className="mt-8 rounded-[1.5rem] border border-stone-100 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-stone-400">
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={currentStage.message}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.35 }}
-              >
-                {currentStage.message}
-              </motion.span>
-            </AnimatePresence>
-            <span className="tabular-nums">{currentStage.progress}%</span>
+        {/* Seção de Gráficos Simulados "Cara de App" */}
+        <div className="mt-8 border border-stone-100 rounded-2xl bg-stone-50/50 p-4 text-left space-y-3.5 shadow-inner">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5">
+            Métricas de Calibração Ativa
+          </p>
+          
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-semibold text-stone-600 flex items-center gap-1.5">
+              <Activity className="h-3.5 w-3.5 text-stone-400" /> TMB Estimada:
+            </span>
+            <span className="font-bold font-mono text-stone-900">{metricBasal} kcal</span>
           </div>
 
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-            <motion.div
-              key={currentStage.progress}
-              initial={{ width: 0 }}
-              animate={{ width: `${currentStage.progress}%` }}
-              transition={{ duration: 0.9, ease: "easeOut" }}
-              className="h-full rounded-full bg-sage-500"
-            />
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-semibold text-stone-600 flex items-center gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5 text-stone-400" /> Déficit Alvo Seguro:
+            </span>
+            <span className="font-bold font-mono text-stone-900">-{metricDeficit} kcal</span>
           </div>
 
-          <div className="mt-4 flex justify-center">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={messageIndex}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="text-xs text-stone-400"
-              >
-                {liveMessages[messageIndex]}
-              </motion.p>
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Steps visuais */}
-        <div className="mt-5 grid grid-cols-3 gap-2.5">
-          {[
-            { label: "Rotina", done: stageIndex >= 1 },
-            { label: "Hábitos", done: stageIndex >= 3 },
-            { label: "Plano", done: stageIndex >= 5 },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-stone-100 bg-white px-3 py-3 text-center shadow-sm"
-            >
-              <motion.div
-                animate={{ backgroundColor: item.done ? "#4a7041" : "#e5e3dc" }}
-                transition={{ duration: 0.5 }}
-                className="mx-auto mb-2 h-1.5 w-8 rounded-full"
-              />
-              <p className={`text-xs font-medium ${item.done ? "text-sage-700" : "text-stone-400"}`}>
-                {item.label}
-              </p>
+          <div className="pt-2 border-t border-stone-100/70">
+            <div className="flex items-center justify-between text-xs mb-1.5 font-bold text-stone-700">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={currentStage.message}
+                  initial={{ opacity: 0, x: -5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 5 }}
+                  transition={{ duration: 0.3 }}
+                  className="truncate max-w-[85%]"
+                >
+                  {currentStage.message}
+                </motion.span>
+              </AnimatePresence>
+              <span className="font-mono">{currentStage.progress}%</span>
             </div>
-          ))}
+
+            <div className="h-2 w-full bg-stone-200/50 rounded-full overflow-hidden">
+              <motion.div
+                key={currentStage.progress}
+                initial={{ width: 0 }}
+                animate={{ width: `${currentStage.progress}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="h-full bg-stone-950 rounded-full"
+              />
+            </div>
+          </div>
         </div>
-      </motion.div>
+
+        {/* Footer Informativo Focado em Conversão */}
+        <p className="mt-6 text-[10px] font-medium text-stone-400 flex items-center justify-center gap-1.5">
+          🔒 Conexão SSL Segura · Algoritmo IA v4.12
+        </p>
+      </div>
     </div>
   );
 }
