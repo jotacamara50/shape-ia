@@ -5,16 +5,13 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  BrainCircuit,
   CheckCircle2,
-  Clock3,
   Download,
-  Flame,
-  Lock,
+  Leaf,
   MailCheck,
   ShieldCheck,
-  Sparkles,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { CheckoutSection } from "@/components/CheckoutSection";
 import { Button } from "@/components/ui/button";
@@ -30,11 +27,11 @@ import {
 const faqItems = [
   {
     question: "O que eu recebo após o pagamento?",
-    answer: "Seu relatório premium em PDF com análise corporal, cardápio semanal, lista de compras, cronograma, substituições e receitas.",
+    answer: "Seu relatório personalizado em PDF com análise do seu perfil, cardápio semanal, lista de compras, cronograma, substituições e receitas.",
   },
   {
     question: "O plano é realmente personalizado?",
-    answer: "Sim. A geração usa seus dados físicos, rotina, sinais emocionais, restrições e objetivo principal para calibrar a estratégia.",
+    answer: "Sim. As recomendações são geradas com base nas suas respostas — rotina, objetivos, desafios, restrições e hábitos alimentares.",
   },
   {
     question: "Quando recebo o acesso?",
@@ -46,14 +43,17 @@ const testimonials = [
   {
     name: "Fernanda, 34",
     quote: "A primeira vez que um plano pareceu encaixar na minha rotina em vez de me culpar por ela.",
+    initial: "F",
   },
   {
     name: "Ricardo, 29",
-    quote: "A parte mais útil foi o diagnóstico do que me fazia exagerar à noite. O relatório parece software, não dieta genérica.",
+    quote: "A parte mais útil foi entender o que me fazia exagerar à noite. Simples e direto.",
+    initial: "R",
   },
   {
     name: "Patrícia, 41",
-    quote: "A leitura inicial já acertou meus bloqueios. O PDF veio organizado e fácil de seguir no celular.",
+    quote: "A análise acertou meus desafios. O PDF veio organizado e fácil de seguir no celular.",
+    initial: "P",
   },
 ];
 
@@ -65,47 +65,21 @@ export default function SeuPlanoPage() {
   const [downloadToken, setDownloadToken] = useState("");
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [emailMessage, setEmailMessage] = useState("");
-  const [timeLeft, setTimeLeft] = useState(600);
   const purchaseTrackedRef = useRef(false);
   const paymentHandledRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
     const data = localStorage.getItem("shapeIA-quiz-data");
-
     if (!data) {
       router.push("/");
       return;
     }
-
     setUserData(JSON.parse(data));
   }, [router]);
 
-  useEffect(() => {
-    if (isPaid) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((current) => {
-        if (current <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isPaid]);
-
   const analysis = useMemo(() => (userData ? buildAnalysis(userData) : null), [userData]);
   const previewTimeline = useMemo(() => (userData ? buildTimeline(userData) : []), [userData]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const handlePaymentSuccess = useCallback(
     async (token: string, payerEmail?: string) => {
@@ -118,7 +92,6 @@ export default function SeuPlanoPage() {
 
       if (typeof window !== "undefined" && !purchaseTrackedRef.current) {
         const fbq = (window as { fbq?: (...args: unknown[]) => void }).fbq;
-
         if (typeof fbq === "function") {
           const price = parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90");
           fbq("track", "Purchase", { value: price, currency: "BRL" });
@@ -146,11 +119,7 @@ export default function SeuPlanoPage() {
             const emailResponse = await fetch("/api/send-plan-email", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: payerEmail,
-                plan,
-                userData,
-              }),
+              body: JSON.stringify({ email: payerEmail, plan, userData }),
             });
 
             if (emailResponse.ok) {
@@ -183,22 +152,16 @@ export default function SeuPlanoPage() {
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan: nutritionPlan,
-          userData,
-          downloadToken,
-        }),
+        body: JSON.stringify({ plan: nutritionPlan, userData, downloadToken }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao gerar PDF");
-      }
+      if (!response.ok) throw new Error("Erro ao gerar PDF");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `shape-ai-relatorio-${userData?.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      anchor.download = `shape-ai-plano-${userData?.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       window.URL.revokeObjectURL(url);
@@ -209,60 +172,79 @@ export default function SeuPlanoPage() {
     }
   };
 
+  /* ── Loading inicial ── */
   if (!userData || !analysis) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <p>Carregando análise...</p>
-      </div>
-    );
-  }
-
-  if (isPaid && isGenerating) {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.16),_transparent_24%),linear-gradient(180deg,_#f7f8fc_0%,_#ffffff_45%,_#f8fbff_100%)] px-4 py-10">
-        <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
-          <div className="w-full rounded-[2rem] border border-white/80 bg-white/84 p-8 text-center shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur sm:p-12">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
-              className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-white"
-            >
-              <BrainCircuit className="h-7 w-7" />
-            </motion.div>
-            <h1 className="mt-8 text-3xl font-semibold tracking-[-0.04em] text-slate-950">
-              Gerando seu relatório premium
-            </h1>
-            <p className="mt-4 text-base leading-7 text-slate-600">
-              Estamos finalizando cardápio, lista de compras, substituições e estratégias de execução para entregar o PDF completo.
-            </p>
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#fafaf8]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-stone-600" />
+          <p className="text-sm text-stone-400">Carregando sua análise…</p>
         </div>
       </div>
     );
   }
 
+  /* ── Gerando plano pós-pagamento ── */
+  if (isPaid && isGenerating) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#fafaf8] px-5">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md rounded-[1.75rem] border border-stone-100 bg-white p-10 text-center shadow-sm"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sage-50"
+          >
+            <Leaf className="h-6 w-6 text-sage-600" />
+          </motion.div>
+          <h1 className="mt-7 text-2xl font-semibold tracking-[-0.025em] text-stone-900">
+            Preparando seu plano
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-stone-400">
+            Estamos finalizando o cardápio, lista de compras, substituições e receitas para entregar o PDF completo.
+          </p>
+          <div className="mt-6 h-1 overflow-hidden rounded-full bg-stone-100">
+            <motion.div
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              className="h-full w-1/2 rounded-full bg-sage-400"
+            />
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  /* ── Plano pronto pós-pagamento ── */
   if (isPaid && nutritionPlan) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.16),_transparent_24%),linear-gradient(180deg,_#f7f8fc_0%,_#ffffff_45%,_#f8fbff_100%)] px-4 py-10">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur sm:p-10">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-h-screen bg-[#fafaf8] px-4 py-10">
+        <div className="mx-auto max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm sm:p-10"
+          >
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Pagamento aprovado
+                <div className="inline-flex items-center gap-2 rounded-full border border-sage-100 bg-sage-50 px-3 py-2 text-sm text-sage-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Pagamento confirmado
                 </div>
-                <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-                  Seu protocolo está pronto para download
+                <h1 className="mt-5 text-[1.8rem] font-semibold leading-[1.2] tracking-[-0.025em] text-stone-900 sm:text-3xl">
+                  Seu plano está pronto para download
                 </h1>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-                  O relatório reúne sua análise metabólica, cardápio semanal, lista de compras, substituições inteligentes e receitas alinhadas ao seu perfil.
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-400">
+                  O relatório reúne o cardápio semanal, lista de compras, substituições e receitas alinhadas ao seu perfil.
                 </p>
               </div>
 
               <Button
                 onClick={handleDownloadPDF}
-                className="h-12 rounded-2xl bg-slate-950 px-6 text-white hover:bg-slate-800"
+                className="h-12 shrink-0 rounded-2xl bg-stone-900 px-6 text-white hover:bg-stone-800"
               >
                 <Download className="mr-2 h-4 w-4" />
                 Baixar PDF
@@ -270,9 +252,9 @@ export default function SeuPlanoPage() {
             </div>
 
             {emailStatus !== "idle" ? (
-              <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
-                <div className="flex items-center gap-2 font-medium text-slate-900">
-                  <MailCheck className="h-4 w-4 text-indigo-600" />
+              <div className="mt-6 rounded-2xl border border-stone-100 bg-stone-50 p-4 text-sm text-stone-500">
+                <div className="flex items-center gap-2 font-medium text-stone-700">
+                  <MailCheck className="h-4 w-4 text-sage-600" />
                   Entrega por email
                 </div>
                 <p className="mt-2">{emailMessage}</p>
@@ -281,90 +263,94 @@ export default function SeuPlanoPage() {
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Score corporal", value: nutritionPlan.analise.scoreCorporal.toString() },
                 { label: "Calorias alvo", value: `${nutritionPlan.analise.caloriasRecomendadas} kcal` },
-                { label: "Receitas", value: `${nutritionPlan.receitas.length} sugestões` },
+                { label: "Receitas incluídas", value: `${nutritionPlan.receitas.length} sugestões` },
                 { label: "Checklist", value: `${nutritionPlan.checklist.length} itens` },
+                { label: "Formato", value: "PDF completo" },
               ].map((item) => (
-                <div key={item.label} className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
-                  <p className="text-sm text-slate-500">{item.label}</p>
-                  <p className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">
+                <div key={item.label} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                  <p className="text-xs text-stone-400">{item.label}</p>
+                  <p className="mt-2 text-lg font-semibold tracking-[-0.025em] text-stone-900">
                     {item.value}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7">
               <Button
                 variant="outline"
                 onClick={() => router.push("/")}
-                className="h-12 rounded-2xl border-slate-200 bg-white"
+                className="h-11 rounded-2xl border-stone-200 bg-white text-stone-600"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar ao início
               </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     );
   }
 
+  /* ── Página principal de resultado ── */
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.16),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.10),_transparent_22%),linear-gradient(180deg,_#f6f8fc_0%,_#ffffff_40%,_#f8fbff_100%)] text-slate-950">
-      <div className="sticky top-0 z-40 border-b border-white/70 bg-white/75 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <Sparkles className="h-4 w-4" />
+    <div className="min-h-screen bg-[#fafaf8] text-stone-900">
+
+      {/* Navbar */}
+      <div className="sticky top-0 z-40 border-b border-stone-100 bg-white/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sage-600">
+              <Leaf className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Shape AI
-              </p>
-              <p className="text-sm text-slate-500">Resultado inicial da sua análise</p>
+              <p className="text-sm font-semibold text-stone-900">Shape AI</p>
+              <p className="text-xs text-stone-400">Sua análise está pronta</p>
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            <Clock3 className="h-4 w-4" />
-            Condição especial por {formatTime(timeLeft)}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-stone-100 bg-stone-50 px-3 py-2 text-xs text-stone-500">
+            <ShieldCheck className="h-3.5 w-3.5 text-sage-600" />
+            Pagamento seguro
           </div>
         </div>
       </div>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="space-y-6">
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+
+          {/* Coluna esquerda */}
+          <div className="space-y-5">
+
+            {/* Resultado principal */}
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8"
+              className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm sm:p-8"
             >
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
-                <BrainCircuit className="h-4 w-4" />
-                Análise metabólica concluída
+              <div className="inline-flex items-center gap-2 rounded-full border border-stone-100 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-500">
+                <Target className="h-3.5 w-3.5 text-sage-600" />
+                Análise concluída
               </div>
 
-              <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-                {userData.name}, seu perfil inicial indica {analysis.perfilMetabolico.toLowerCase()}.
+              <h1 className="mt-5 text-[1.8rem] font-semibold leading-[1.2] tracking-[-0.025em] text-stone-900 sm:text-3xl">
+                {userData.name}, com base nas suas respostas, identificamos alguns padrões.
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                A leitura aponta impacto relevante de {getBodyConcernLabel(userData.bodyConcern)} com janela crítica em {getHungerWindowLabel(userData.hungerTime)} e foco principal em {getGoalLabel(userData.goal).toLowerCase()}.
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-400">
+                A análise considera impacto em {getBodyConcernLabel(userData.bodyConcern).toLowerCase()}, janela crítica no período da {getHungerWindowLabel(userData.hungerTime).toLowerCase()} e foco em {getGoalLabel(userData.goal).toLowerCase()}.
               </p>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {[
-                  { label: "Score corporal", value: analysis.scoreCorporal.toString(), icon: Sparkles },
-                  { label: "Dificuldade", value: analysis.nivelDificuldade, icon: Target },
-                  { label: "Calorias alvo", value: `${analysis.caloriasRecomendadas} kcal`, icon: Flame },
-                  { label: "Confiança da análise", value: `${analysis.confiancaAnalise}%`, icon: ShieldCheck },
+                  { label: "Perfil metabólico", value: analysis.perfilMetabolico, icon: Leaf },
+                  { label: "Dificuldade estimada", value: analysis.nivelDificuldade, icon: Target },
+                  { label: "Calorias alvo", value: `${analysis.caloriasRecomendadas} kcal`, icon: TrendingUp },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5">
-                    <item.icon className="h-5 w-5 text-indigo-600" />
-                    <p className="mt-4 text-sm text-slate-500">{item.label}</p>
-                    <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+                  <div key={item.label} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                    <item.icon className="h-4 w-4 text-sage-600" />
+                    <p className="mt-3 text-xs text-stone-400">{item.label}</p>
+                    <p className="mt-1 text-base font-semibold tracking-[-0.02em] text-stone-900">
                       {item.value}
                     </p>
                   </div>
@@ -372,103 +358,107 @@ export default function SeuPlanoPage() {
               </div>
             </motion.div>
 
+            {/* Padrões identificados + estratégia */}
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]"
+              transition={{ delay: 0.06 }}
+              className="grid gap-5 sm:grid-cols-2"
             >
-              <div className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur">
-                <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
-                  O que a IA identificou
+              <div className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm">
+                <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+                  O que identificamos
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Seu resultado cruza metabolismo, padrão de fome e capacidade real de execução.
+                <p className="mt-1.5 text-xs leading-5 text-stone-400">
+                  Padrões que impactam sua rotina alimentar.
                 </p>
 
-                <div className="mt-6 space-y-3">
+                <div className="mt-5 space-y-2.5">
                   {analysis.bloqueiosIdentificados.map((blocker) => (
                     <div
                       key={blocker}
-                      className="rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700"
+                      className="flex items-start gap-3 rounded-2xl border border-stone-100 bg-stone-50 px-4 py-3.5 text-sm leading-6 text-stone-600"
                     >
+                      <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-sage-500" />
                       {blocker}
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-950 p-5 text-white">
-                  <p className="text-sm text-slate-300">Resumo inteligente</p>
-                  <p className="mt-3 text-lg leading-8">{analysis.resumoInteligente}</p>
+                <div className="mt-5 rounded-2xl border border-stone-100 bg-stone-900 p-4 text-white">
+                  <p className="text-sm leading-6 text-stone-300">{analysis.resumoInteligente}</p>
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur">
-                <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
-                  Estratégia recomendada
+              <div className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm">
+                <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+                  Orientações iniciais
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Direção sugerida para gerar aderência antes de buscar intensidade.
+                <p className="mt-1.5 text-xs leading-5 text-stone-400">
+                  Direção sugerida para criar consistência antes de buscar intensidade.
                 </p>
 
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Tendência alimentar</p>
-                    <p className="mt-2 font-medium text-slate-950">{analysis.tendenciaAlimentar}</p>
-                  </div>
-                  <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Estratégia base</p>
-                    <p className="mt-2 font-medium text-slate-950">{analysis.estrategiaRecomendada}</p>
-                  </div>
-                  <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Estimativa de evolução</p>
-                    <p className="mt-2 font-medium text-slate-950">{analysis.estimativaEvolucao}</p>
-                  </div>
+                <div className="mt-5 space-y-3">
+                  {[
+                    { label: "Tendência alimentar", value: analysis.tendenciaAlimentar },
+                    { label: "Estratégia base", value: analysis.estrategiaRecomendada },
+                    { label: "Estimativa de evolução", value: analysis.estimativaEvolucao },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                      <p className="text-xs text-stone-400">{item.label}</p>
+                      <p className="mt-1.5 text-sm font-medium text-stone-900">{item.value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
 
+            {/* Timeline */}
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur"
+              className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm"
             >
-              <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
-                Timeline da sua evolução personalizada
+              <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+                Sua jornada estimada
               </h2>
-              <div className="mt-6 grid gap-4 lg:grid-cols-3">
-                {previewTimeline.map((item) => (
-                  <div key={item.fase} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-sm font-medium text-indigo-700">{item.fase}</p>
-                    <p className="mt-3 font-semibold text-slate-950">{item.foco}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{item.expectativa}</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {previewTimeline.map((item, index) => (
+                  <div key={item.fase} className="rounded-2xl border border-stone-100 bg-stone-50 p-5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-100 text-xs font-semibold text-sage-700">
+                      {index + 1}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-stone-900">{item.fase}</p>
+                    <p className="mt-1 text-sm font-medium text-stone-600">{item.foco}</p>
+                    <p className="mt-2 text-xs leading-5 text-stone-400">{item.expectativa}</p>
                   </div>
                 ))}
               </div>
             </motion.div>
 
+            {/* Preview bloqueado */}
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.14 }}
-              className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur"
+              className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm"
             >
-              <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
-                Preview do relatório premium
+              <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+                Seu plano completo
               </h2>
-              <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-                <div className="relative overflow-hidden rounded-[1.8rem] border border-slate-200 bg-slate-50 p-5">
-                  <div className="space-y-4 blur-[2px]">
-                    <div className="flex items-center justify-between rounded-[1.3rem] bg-white p-4">
+              <div className="mt-5 grid gap-5 sm:grid-cols-[1.1fr_0.9fr]">
+                <div className="relative overflow-hidden rounded-2xl border border-stone-100 bg-stone-50 p-5">
+                  <div className="space-y-3 blur-[3px] select-none">
+                    <div className="flex items-center justify-between rounded-2xl bg-white p-4">
                       <div>
-                        <p className="text-sm text-slate-500">Relatório de {userData.name}</p>
-                        <p className="mt-1 text-lg font-semibold text-slate-950">
-                          Plano alimentar por IA
+                        <p className="text-xs text-stone-400">Relatório de {userData.name}</p>
+                        <p className="mt-1 text-base font-semibold text-stone-900">
+                          Plano alimentar personalizado
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-slate-950 px-3 py-2 text-sm text-white">
-                        Score {analysis.scoreCorporal}
+                      <div className="rounded-xl bg-stone-900 px-3 py-1.5 text-xs text-white">
+                        {analysis.caloriasRecomendadas} kcal
                       </div>
                     </div>
 
@@ -477,53 +467,40 @@ export default function SeuPlanoPage() {
                       ["Meta proteica", analysis.proteinaMeta],
                       ["Hidratação", analysis.hidratacaoMeta],
                     ].map(([label, value]) => (
-                      <div key={label} className="rounded-[1.2rem] bg-white p-4">
-                        <p className="text-sm text-slate-500">{label}</p>
-                        <p className="mt-2 font-medium text-slate-950">{value}</p>
+                      <div key={label} className="rounded-2xl bg-white p-4">
+                        <p className="text-xs text-stone-400">{label}</p>
+                        <p className="mt-1.5 text-sm font-medium text-stone-900">{value}</p>
                       </div>
                     ))}
-
-                    <div className="rounded-[1.2rem] bg-white p-4">
-                      <p className="text-sm text-slate-500">Macronutrientes sugeridos</p>
-                      <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-                        <div className="rounded-xl bg-slate-50 p-3 text-slate-700">
-                          Prot. {analysis.macros.proteinas}g
-                        </div>
-                        <div className="rounded-xl bg-slate-50 p-3 text-slate-700">
-                          Carb. {analysis.macros.carboidratos}g
-                        </div>
-                        <div className="rounded-xl bg-slate-50 p-3 text-slate-700">
-                          Gord. {analysis.macros.gorduras}g
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/35 backdrop-blur-sm">
-                    <div className="rounded-[1.5rem] border border-white/80 bg-white/90 p-5 text-center shadow-xl">
-                      <Lock className="mx-auto h-8 w-8 text-slate-950" />
-                      <p className="mt-3 font-semibold text-slate-950">Desbloqueie o protocolo completo</p>
-                      <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">
-                        Acesso ao PDF com cardápio, cronograma, substituições, receitas e checklist.
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px]">
+                    <div className="rounded-[1.4rem] border border-stone-100 bg-white p-5 text-center shadow-sm">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-100">
+                        <ShieldCheck className="h-5 w-5 text-stone-400" />
+                      </div>
+                      <p className="mt-3 text-sm font-semibold text-stone-900">Conteúdo completo bloqueado</p>
+                      <p className="mt-1.5 max-w-xs text-xs leading-5 text-stone-400">
+                        Desbloqueie para acessar o PDF com cardápio, receitas e checklist.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {[
                     "Plano alimentar semanal completo",
-                    "Score corporal e perfil metabólico",
                     "Cronograma de execução por fases",
                     "Lista de compras organizada",
-                    "Receitas e substituições inteligentes",
-                    userData.wantsWorkout ? "Rotina básica de treino incluída" : "Foco total em alimentação personalizada",
+                    "Receitas e substituições",
+                    "Orientações comportamentais",
+                    userData.wantsWorkout ? "Rotina básica de treino incluída" : "Foco total em alimentação",
                   ].map((item) => (
                     <div
                       key={item}
-                      className="flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700"
+                      className="flex items-start gap-3 rounded-2xl border border-stone-100 bg-stone-50 px-4 py-3.5 text-sm leading-5 text-stone-600"
                     >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sage-600" />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -532,45 +509,49 @@ export default function SeuPlanoPage() {
             </motion.div>
           </div>
 
+          {/* Coluna direita — Checkout */}
           <motion.aside
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+            transition={{ delay: 0.06 }}
             className="h-fit lg:sticky lg:top-24"
           >
-            <div className="rounded-[2rem] border border-slate-900/5 bg-slate-950 p-5 text-white shadow-[0_40px_120px_rgba(15,23,42,0.20)]">
-              <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
-                Oferta do seu relatório
+            <div className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-sage-100 bg-sage-50 px-3 py-1.5 text-xs font-medium text-sage-700">
+                <Leaf className="h-3 w-3" />
+                Seu plano alimentar completo
               </div>
 
-              <h2 className="mt-5 text-2xl font-semibold tracking-[-0.04em]">
-                Plano alimentar personalizado por IA
+              <h2 className="mt-4 text-xl font-semibold tracking-[-0.025em] text-stone-900">
+                Plano alimentar personalizado
               </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Desbloqueie agora o protocolo completo com ajustes alimentares, cronograma, receitas e versão em PDF para seguir no dia a dia.
+              <p className="mt-2.5 text-sm leading-6 text-stone-400">
+                Desbloqueie o protocolo completo com ajustes alimentares, cronograma, receitas e versão em PDF para seguir no dia a dia.
               </p>
 
-              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-center">
-                <p className="text-sm text-slate-400">Condição especial de hoje</p>
-                <div className="mt-3 flex items-end justify-center gap-3">
-                  <span className="text-lg text-slate-500 line-through">R$ 97,90</span>
-                  <span className="text-4xl font-semibold tracking-[-0.05em] text-white">R$ 27,90</span>
+              <div className="mt-5 rounded-2xl border border-stone-100 bg-stone-50 p-4 text-center">
+                <p className="text-xs text-stone-400">Valor de hoje</p>
+                <div className="mt-2.5 flex items-end justify-center gap-2.5">
+                  <span className="text-sm text-stone-400 line-through">R$ 97,90</span>
+                  <span className="text-3xl font-semibold tracking-[-0.04em] text-stone-900">
+                    R$ {parseFloat(process.env.NEXT_PUBLIC_PRODUCT_PRICE || "27.90").toFixed(2)}
+                  </span>
                 </div>
-                <p className="mt-2 text-sm text-cyan-200">Pagamento seguro com acesso imediato</p>
+                <p className="mt-1.5 text-xs text-stone-400">Pagamento único · Acesso imediato</p>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-5">
                 <CheckoutSection onPaymentSuccess={handlePaymentSuccess} quizData={userData} />
               </div>
 
-              <div className="mt-6 space-y-3 text-sm text-slate-300">
+              <div className="mt-5 space-y-2.5">
                 {[
                   "Garantia de 7 dias",
                   "Checkout processado pelo Mercado Pago",
-                  "Envio do PDF para o email informado",
+                  "PDF enviado para o email informado",
                 ].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-emerald-300" />
+                  <div key={item} className="flex items-center gap-2.5 text-xs text-stone-400">
+                    <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 text-sage-600" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -579,28 +560,36 @@ export default function SeuPlanoPage() {
           </motion.aside>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur">
-            <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">FAQ</h2>
-            <div className="mt-6 space-y-4">
+        {/* FAQ + Depoimentos */}
+        <section className="mt-6 grid gap-5 sm:grid-cols-2">
+          <div className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+              Perguntas frequentes
+            </h2>
+            <div className="mt-5 space-y-3">
               {faqItems.map((item) => (
-                <div key={item.question} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                  <p className="font-medium text-slate-950">{item.question}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.answer}</p>
+                <div key={item.question} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                  <p className="text-sm font-medium text-stone-900">{item.question}</p>
+                  <p className="mt-2 text-sm leading-6 text-stone-400">{item.answer}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/80 bg-white/84 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur">
-            <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
-              Quem já desbloqueou
+          <div className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold tracking-[-0.02em] text-stone-900">
+              O que dizem por aí
             </h2>
-            <div className="mt-6 space-y-4">
+            <div className="mt-5 space-y-3">
               {testimonials.map((item) => (
-                <div key={item.name} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-950">{item.name}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.quote}</p>
+                <div key={item.name} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sage-100 text-sm font-semibold text-sage-700">
+                      {item.initial}
+                    </div>
+                    <p className="text-sm font-semibold text-stone-900">{item.name}</p>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-stone-400">&ldquo;{item.quote}&rdquo;</p>
                 </div>
               ))}
             </div>

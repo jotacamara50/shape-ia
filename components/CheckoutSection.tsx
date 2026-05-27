@@ -56,9 +56,10 @@ export const CheckoutSection = memo(function CheckoutSection({
           setPaymentStatus("approved");
 
           confetti({
-            particleCount: 100,
-            spread: 70,
+            particleCount: 80,
+            spread: 60,
             origin: { y: 0.6 },
+            colors: ["#4a7041", "#82aa77", "#d3e3cd"],
           });
 
           setTimeout(() => {
@@ -98,10 +99,7 @@ export const CheckoutSection = memo(function CheckoutSection({
       const response = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quizData,
-          email: email.trim(),
-        }),
+        body: JSON.stringify({ quizData, email: email.trim() }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -150,11 +148,7 @@ export const CheckoutSection = memo(function CheckoutSection({
       const response = await fetch("/api/process-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          formData,
-          email: mpPayerEmail || email,
-        }),
+        body: JSON.stringify({ orderId, formData, email: mpPayerEmail || email }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -165,9 +159,7 @@ export const CheckoutSection = memo(function CheckoutSection({
         return Promise.reject(new Error(data?.error || "Payment failed"));
       }
 
-      if (data?.payerEmail) {
-        setPayerEmail(data.payerEmail);
-      }
+      if (data?.payerEmail) setPayerEmail(data.payerEmail);
 
       if (data?.qrCodeBase64 || data?.qrCode || data?.ticketUrl) {
         setPixData({
@@ -201,51 +193,46 @@ export const CheckoutSection = memo(function CheckoutSection({
     setError("Erro ao carregar o checkout. Recarregue a página.");
   };
 
+  /* ── Aprovado ── */
   if (paymentStatus === "approved") {
     return (
-      <div className="rounded-[1.7rem] border border-emerald-400/20 bg-emerald-400/10 p-6 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white">
-          <CheckCircle2 className="h-7 w-7" />
+      <div className="rounded-2xl border border-sage-100 bg-sage-50 p-6 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sage-600">
+          <CheckCircle2 className="h-6 w-6 text-white" />
         </div>
-        <h3 className="mt-4 text-xl font-semibold text-white">Pagamento aprovado</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
-          Redirecionando para o seu relatório personalizado.
+        <h3 className="mt-4 text-lg font-semibold text-stone-900">Pagamento confirmado</h3>
+        <p className="mt-2 text-sm leading-6 text-stone-400">
+          Redirecionando para o seu plano personalizado.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
-          <div>
-            <p className="font-medium text-white">Acesso liberado após confirmação</p>
-            <p className="mt-1 text-sm leading-6 text-slate-300">
-              Informe seu melhor email para receber o PDF e continuar no checkout seguro.
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* Info acesso */}
+      <div className="flex items-start gap-3 rounded-2xl border border-stone-100 bg-stone-50 p-4">
+        <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-sage-600" />
+        <div>
+          <p className="text-sm font-medium text-stone-800">Você receberá o PDF no email informado</p>
+          <p className="mt-1 text-xs leading-5 text-stone-400">
+            O acesso é liberado imediatamente após a confirmação do pagamento.
+          </p>
         </div>
       </div>
 
+      {/* Erro */}
       {error ? (
-        <div className="rounded-[1.4rem] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       ) : null}
 
+      {/* Email + CTA */}
       {!preferenceId ? (
-        <div className="space-y-4 rounded-[1.7rem] border border-white/10 bg-white/5 p-5">
-          <div className="rounded-[1.3rem] border border-cyan-400/15 bg-cyan-400/10 p-4">
-            <p className="text-sm font-medium text-cyan-100">Plano alimentar personalizado — R$ {price.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-cyan-50/80">
-              Relatório em PDF, lista de compras, cronograma e estratégias alimentares.
-            </p>
-          </div>
-
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="checkout-email" className="text-sm text-slate-200">
+            <Label htmlFor="checkout-email" className="text-sm font-medium text-stone-700">
               Email para receber o relatório
             </Label>
             <Input
@@ -257,60 +244,63 @@ export const CheckoutSection = memo(function CheckoutSection({
                 setEmail(event.target.value);
                 if (emailError) setEmailError("");
               }}
-              className={`h-12 rounded-2xl border-white/10 bg-white text-slate-950 ${
-                emailError ? "border-rose-400" : ""
+              className={`h-12 rounded-2xl border-stone-200 bg-stone-50 text-stone-900 focus:border-stone-400 focus:bg-white ${
+                emailError ? "border-red-300" : ""
               }`}
             />
-            {emailError ? <p className="text-sm text-rose-200">{emailError}</p> : null}
-            <p className="text-xs text-slate-400">Sem spam. Usaremos esse email apenas para entrega e acesso.</p>
+            {emailError ? <p className="text-xs text-red-500">{emailError}</p> : null}
+            <p className="text-xs text-stone-400">Sem spam. Usado apenas para entrega do relatório.</p>
           </div>
 
           <Button
             onClick={createOrder}
             disabled={isCreatingOrder || !isEmailValid}
-            className="h-12 w-full rounded-2xl bg-white text-slate-950 hover:bg-slate-100"
+            className="h-12 w-full rounded-2xl bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-50"
           >
-            {isCreatingOrder ? "Preparando checkout..." : "Continuar para pagamento"}
+            {isCreatingOrder ? "Preparando checkout…" : "Continuar para pagamento"}
           </Button>
         </div>
       ) : (
-        <div className="rounded-[1.4rem] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-          Email para entrega: <span className="font-medium text-white">{email}</span>
+        <div className="rounded-2xl border border-stone-100 bg-stone-50 px-4 py-3 text-sm text-stone-500">
+          Email confirmado: <span className="font-medium text-stone-800">{email}</span>
         </div>
       )}
 
+      {/* Mercado Pago Brick */}
       {preferenceId ? (
-        <div className="space-y-4 rounded-[1.7rem] border border-white/10 bg-white p-4 text-slate-950">
-          <div className="mp-brick-wrapper w-full max-w-full">
-            <Payment
-              initialization={{
-                amount: price,
-                preferenceId,
-                payer: email ? { email } : undefined,
-              }}
-              onSubmit={onSubmit}
-              onError={onError}
-              customization={{
-                visual: {
-                  style: {
-                    theme: "default",
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-4">
+            <div className="mp-brick-wrapper w-full max-w-full">
+              <Payment
+                initialization={{
+                  amount: price,
+                  preferenceId,
+                  payer: email ? { email } : undefined,
+                }}
+                onSubmit={onSubmit}
+                onError={onError}
+                customization={{
+                  visual: {
+                    style: {
+                      theme: "default",
+                    },
                   },
-                },
-                paymentMethods: {
-                  creditCard: "all",
-                  debitCard: "all",
-                  bankTransfer: "all",
-                },
-              }}
-            />
+                  paymentMethods: {
+                    creditCard: "all",
+                    debitCard: "all",
+                    bankTransfer: "all",
+                  },
+                }}
+              />
+            </div>
+            <p className="mt-3 text-center text-xs text-stone-400">Pagamento processado pelo Mercado Pago</p>
           </div>
 
-          <p className="text-center text-xs text-slate-500">Pagamento processado pelo Mercado Pago</p>
-
+          {/* Pix gerado */}
           {pixData ? (
-            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-950">Pix gerado</p>
-              <p className="mt-1 text-xs text-slate-500">
+            <div className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+              <p className="text-sm font-medium text-stone-900">Pix gerado</p>
+              <p className="mt-1 text-xs text-stone-400">
                 Ao confirmar o Pix, seu acesso é liberado automaticamente.
               </p>
 
@@ -319,23 +309,23 @@ export const CheckoutSection = memo(function CheckoutSection({
                   <Image
                     src={`data:image/png;base64,${pixData.qrCodeBase64}`}
                     alt="QR Code Pix"
-                    width={192}
-                    height={192}
+                    width={180}
+                    height={180}
                     unoptimized
-                    className="h-48 w-48 rounded-2xl border border-slate-200 bg-white p-2"
+                    className="h-44 w-44 rounded-2xl border border-stone-100 bg-white p-2"
                   />
                 </div>
               ) : null}
 
               {pixData.qrCode ? (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs text-slate-500">Copie o código Pix</p>
+                  <p className="text-xs text-stone-400">Copie o código Pix</p>
                   <div className="flex gap-2">
                     <Input
                       readOnly
                       value={pixData.qrCode}
-                      className={`h-11 rounded-2xl bg-white text-xs ${
-                        pixCopied ? "border-sky-400 bg-sky-50" : "border-slate-200"
+                      className={`h-11 rounded-2xl text-xs ${
+                        pixCopied ? "border-sage-300 bg-sage-50" : "border-stone-200 bg-stone-50"
                       }`}
                     />
                     <Button
@@ -346,7 +336,7 @@ export const CheckoutSection = memo(function CheckoutSection({
                         setPixCopied(true);
                         setTimeout(() => setPixCopied(false), 1500);
                       }}
-                      className="h-11 rounded-2xl border-slate-200"
+                      className="h-11 rounded-2xl border-stone-200 bg-white text-stone-700"
                     >
                       {pixCopied ? "Copiado" : "Copiar"}
                     </Button>
@@ -360,7 +350,7 @@ export const CheckoutSection = memo(function CheckoutSection({
                     href={pixData.ticketUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm text-sky-700 underline"
+                    className="text-sm text-stone-600 underline underline-offset-2"
                   >
                     Abrir instruções do Pix
                   </a>
@@ -370,9 +360,11 @@ export const CheckoutSection = memo(function CheckoutSection({
           ) : null}
         </div>
       ) : (
-        <p className="text-center text-xs text-slate-400">
-          As opções de pagamento são liberadas após o email ser informado.
-        </p>
+        !preferenceId && email && (
+          <p className="text-center text-xs text-stone-400">
+            As opções de pagamento aparecem após confirmar o email.
+          </p>
+        )
       )}
     </div>
   );

@@ -4,26 +4,49 @@
 
 @layer base {
   :root {
-    --background: 220 33% 98%;
-    --foreground: 222 47% 11%;
+    /* Superfícies */
+    --background: 0 0% 99%;
+    --foreground: 220 18% 12%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 18% 12%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 220 30% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 220 25% 95%;
-    --muted-foreground: 215 16% 42%;
-    --accent: 220 30% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 20% 90%;
-    --input: 220 20% 90%;
-    --ring: 222 47% 11%;
-    --radius: 1rem;
+    --popover-foreground: 220 18% 12%;
+
+    /* Primário — quase preto, elegante */
+    --primary: 220 18% 12%;
+    --primary-foreground: 0 0% 99%;
+
+    /* Secundário — off-white suave */
+    --secondary: 40 20% 96%;
+    --secondary-foreground: 220 18% 12%;
+
+    /* Muted */
+    --muted: 30 10% 95%;
+    --muted-foreground: 220 8% 46%;
+
+    /* Accent — verde wellness sálvia */
+    --accent: 152 38% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Estados */
+    --destructive: 0 68% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Bordas e inputs */
+    --border: 30 12% 90%;
+    --input: 30 12% 90%;
+    --ring: 152 38% 42%;
+
+    /* Radius apple-like */
+    --radius: 1.25rem;
+
+    /* Sombras wellness */
+    --shadow-xs: 0 1px 3px rgba(30, 30, 20, 0.06);
+    --shadow-sm: 0 4px 16px rgba(30, 30, 20, 0.07);
+    --shadow-md: 0 8px 32px rgba(30, 30, 20, 0.09);
+    --shadow-lg: 0 20px 60px rgba(30, 30, 20, 0.10);
   }
 
   * {
@@ -32,24 +55,47 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    background-color: #fafaf8;
   }
 
   ::selection {
-    background: rgba(99, 102, 241, 0.18);
-    color: #0f172a;
+    background: rgba(74, 160, 100, 0.18);
+    color: #141a10;
   }
 }
 
 @layer components {
+  /* Mercado Pago brick */
   .mp-brick-wrapper,
   .mp-brick-wrapper > div,
   .mp-brick-wrapper iframe {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
+  }
+
+  /* Card wellness padrão */
+  .card-wellness {
+    @apply rounded-[1.75rem] border border-stone-100 bg-white shadow-sm;
+  }
+
+  /* Badge wellness */
+  .badge-wellness {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-stone-100 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-500;
+  }
+
+  /* Progress bar wellness */
+  .progress-wellness {
+    @apply h-1 overflow-hidden rounded-full bg-stone-100;
+  }
+
+  .progress-wellness-fill {
+    @apply h-full rounded-full bg-green-600 transition-all duration-700 ease-out;
   }
 }

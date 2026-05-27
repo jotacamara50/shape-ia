@@ -3,10 +3,9 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, BrainCircuit, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   ActivityLevel,
   BiggestChallenge,
@@ -25,11 +24,11 @@ import {
 const TOTAL_STEPS = 9;
 
 const progressMessages = [
-  { threshold: 12, label: "Analisando perfil corporal" },
-  { threshold: 31, label: "Calculando metabolismo" },
-  { threshold: 56, label: "Identificando padrões alimentares" },
-  { threshold: 78, label: "IA detectando bloqueios" },
-  { threshold: 92, label: "Gerando estratégia personalizada" },
+  { threshold: 12, label: "Organizando suas respostas" },
+  { threshold: 31, label: "Identificando seus padrões" },
+  { threshold: 56, label: "Mapeando seus hábitos" },
+  { threshold: 78, label: "Preparando sua análise" },
+  { threshold: 92, label: "Personalizando recomendações" },
 ];
 
 const goalOptions: { value: Goal; label: string; subtitle: string }[] = [
@@ -70,7 +69,7 @@ const challengeOptions: { value: BiggestChallenge; label: string; subtitle: stri
 
 const emotionalHungerOptions: { value: EmotionalHunger; label: string; subtitle: string }[] = [
   { value: "nunca", label: "Quase nunca", subtitle: "Fome mais física do que emocional" },
-  { value: "as_vezes", label: "Às vezes", subtitle: "Acontece em alguns gatilhos" },
+  { value: "as_vezes", label: "Às vezes", subtitle: "Acontece em alguns momentos" },
   { value: "frequente", label: "Com frequência", subtitle: "Afeta bastante minhas decisões" },
 ];
 
@@ -124,22 +123,22 @@ function StepShell({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -18 }}
+      exit={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.28 }}
-      className="rounded-[2rem] border border-white/80 bg-white/82 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8"
+      className="rounded-[1.75rem] border border-stone-100 bg-white p-6 shadow-sm sm:p-8"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-stone-400">
         {eyebrow}
       </p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+      <h2 className="mt-3 text-2xl font-semibold leading-[1.25] tracking-[-0.025em] text-stone-900 sm:text-3xl">
         {title}
       </h2>
-      <p className="mt-3 max-w-xl text-base leading-7 text-slate-600">
+      <p className="mt-3 max-w-xl text-sm leading-6 text-stone-400">
         {description}
       </p>
-      <div className="mt-8">{children}</div>
+      <div className="mt-7">{children}</div>
     </motion.div>
   );
 }
@@ -156,7 +155,7 @@ function OptionGrid<T extends string>({
   columns?: "single" | "double";
 }) {
   return (
-    <div className={`grid gap-3 ${columns === "double" ? "sm:grid-cols-2" : ""}`}>
+    <div className={`grid gap-2.5 ${columns === "double" ? "sm:grid-cols-2" : ""}`}>
       {options.map((option) => {
         const selected = value === option.value;
         return (
@@ -164,15 +163,15 @@ function OptionGrid<T extends string>({
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${
+            className={`rounded-2xl border px-4 py-4 text-left transition-all duration-200 ${
               selected
-                ? "border-slate-950 bg-slate-950 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]"
-                : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                ? "border-green-700 bg-green-700 text-white shadow-sm"
+                : "border-stone-100 bg-stone-50 text-stone-900 hover:border-stone-200 hover:bg-white"
             }`}
           >
             <p className="text-base font-semibold">{option.label}</p>
             {option.subtitle ? (
-              <p className={`mt-1 text-sm leading-6 ${selected ? "text-slate-300" : "text-slate-500"}`}>
+              <p className={`mt-1 text-sm leading-5 ${selected ? "text-green-100" : "text-stone-400"}`}>
                 {option.subtitle}
               </p>
             ) : null}
@@ -225,63 +224,68 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
   const handleNext = () => {
     if (!canProceed()) return;
-
     if (step < TOTAL_STEPS) {
       setStep((current) => current + 1);
       return;
     }
-
     onComplete(data);
   };
 
   const handleBack = () => {
-    if (step > 1) {
-      setStep((current) => current - 1);
-    }
+    if (step > 1) setStep((current) => current - 1);
   };
 
   const approxImc =
-    data.weight > 0 && data.height > 0 ? (data.weight / Math.pow(data.height / 100, 2)).toFixed(1) : null;
+    data.weight > 0 && data.height > 0
+      ? (data.weight / Math.pow(data.height / 100, 2)).toFixed(1)
+      : null;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.14),_transparent_24%),linear-gradient(180deg,_#f6f8fc_0%,_#ffffff_45%,_#f8fbff_100%)]">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6">
-        <div className="mb-6 rounded-[2rem] border border-white/80 bg-white/82 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+    <div className="min-h-screen bg-[#fafaf8]">
+      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-5 sm:px-6">
+
+        {/* Header */}
+        <div className="mb-6 rounded-[1.5rem] border border-stone-100 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
-                <BrainCircuit className="h-5 w-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sage-600">
+                <Leaf className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Shape AI
-                </p>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm font-semibold text-stone-900">Shape AI</p>
+                <p className="text-xs text-stone-400">
                   Passo {step} de {TOTAL_STEPS}
                 </p>
               </div>
             </div>
 
-            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sm:flex">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
+            <div className="hidden items-center gap-1.5 rounded-full border border-stone-100 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-500 sm:flex">
               {progressLabel}
             </div>
           </div>
 
           <div className="mt-4">
-            <Progress value={progress} className="h-2.5 rounded-full bg-slate-100" />
-            <p className="mt-3 text-sm text-slate-500 sm:hidden">{progressLabel}</p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-stone-100">
+              <motion.div
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="h-full rounded-full bg-green-600"
+              />
+            </div>
+            <p className="mt-2.5 text-xs text-stone-400 sm:hidden">{progressLabel}</p>
           </div>
         </div>
 
-        <div className="flex flex-1 items-center">
+        {/* Step content */}
+        <div className="flex flex-1 items-start">
           <div className="w-full">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <StepShell
+                  key="step-1"
                   eyebrow="Identificação"
                   title="Antes de tudo, como podemos te chamar?"
-                  description="Seu nome será usado para personalizar a leitura inicial e montar um relatório com sensação real de acompanhamento."
+                  description="Seu nome será usado para personalizar a análise e deixar o resultado mais próximo da sua realidade."
                 >
                   <div className="space-y-4">
                     <Input
@@ -290,10 +294,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                         setData((current) => ({ ...current, name: event.target.value }))
                       }
                       placeholder="Ex: Mariana"
-                      className="h-14 rounded-2xl border-slate-200 px-5 text-lg"
+                      className="h-14 rounded-2xl border-stone-200 bg-stone-50 px-5 text-lg focus:border-stone-400 focus:bg-white"
                     />
-                    <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-4 text-sm leading-6 text-slate-600">
-                      A análise cruza sinais físicos, comportamentais e de rotina. Não é um quiz genérico nem uma dieta pronta.
+                    <div className="rounded-2xl border border-stone-100 bg-stone-50 p-4 text-sm leading-6 text-stone-500">
+                      Com base nas suas respostas, identificamos padrões e criamos orientações que respeitam a sua rotina.
                     </div>
                   </div>
                 </StepShell>
@@ -301,9 +305,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 2 && (
                 <StepShell
+                  key="step-2"
                   eyebrow="Objetivo principal"
-                  title={`${data.name || "Você"}, o que mais quer destravar agora?`}
-                  description="Isso define a direção da estratégia alimentar e como a IA ajusta calorias, aderência e sensação de progresso."
+                  title={`${data.name || "Você"}, o que mais quer trabalhar agora?`}
+                  description="Isso define a direção das suas recomendações alimentares e como priorizamos cada sugestão."
                 >
                   <OptionGrid
                     options={goalOptions}
@@ -315,9 +320,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 3 && (
                 <StepShell
+                  key="step-3"
                   eyebrow="Autoestima"
-                  title="Qual parte do seu corpo mais afeta sua autoestima hoje?"
-                  description="Esse sinal ajuda a IA a interpretar urgência emocional, percepção corporal e expectativa de resultado."
+                  title="Qual parte do seu corpo mais afeta como você se sente hoje?"
+                  description="Isso nos ajuda a entender o que mais importa para você neste momento e personalizar o foco do plano."
                 >
                   <OptionGrid
                     options={bodyConcernOptions}
@@ -330,9 +336,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 4 && (
                 <StepShell
-                  eyebrow="Perfil corporal"
-                  title="Vamos medir a base metabólica da sua análise."
-                  description="Idade, peso, altura e gênero ajudam a estimar gasto basal, intensidade de ajuste e velocidade provável de resposta."
+                  key="step-4"
+                  eyebrow="Ponto de partida"
+                  title="Queremos entender seu ponto de partida."
+                  description="Idade, peso, altura e gênero nos ajudam a calibrar as recomendações para o seu perfil."
                 >
                   <div className="grid gap-4 sm:grid-cols-3">
                     <Input
@@ -343,7 +350,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                         setData((current) => ({ ...current, age: Number(event.target.value || 0) }))
                       }
                       placeholder="Idade"
-                      className="h-14 rounded-2xl border-slate-200 px-4 text-lg"
+                      className="h-14 rounded-2xl border-stone-200 bg-stone-50 px-4 text-lg focus:border-stone-400 focus:bg-white"
                     />
                     <Input
                       type="number"
@@ -353,7 +360,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                         setData((current) => ({ ...current, weight: Number(event.target.value || 0) }))
                       }
                       placeholder="Peso (kg)"
-                      className="h-14 rounded-2xl border-slate-200 px-4 text-lg"
+                      className="h-14 rounded-2xl border-stone-200 bg-stone-50 px-4 text-lg focus:border-stone-400 focus:bg-white"
                     />
                     <Input
                       type="number"
@@ -363,7 +370,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                         setData((current) => ({ ...current, height: Number(event.target.value || 0) }))
                       }
                       placeholder="Altura (cm)"
-                      className="h-14 rounded-2xl border-slate-200 px-4 text-lg"
+                      className="h-14 rounded-2xl border-stone-200 bg-stone-50 px-4 text-lg focus:border-stone-400 focus:bg-white"
                     />
                   </div>
 
@@ -375,10 +382,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                           key={option.value}
                           type="button"
                           onClick={() => setData((current) => ({ ...current, gender: option.value }))}
-                          className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                          className={`rounded-2xl border px-4 py-4 text-left transition-all duration-200 ${
                             selected
-                              ? "border-slate-950 bg-slate-950 text-white"
-                              : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
+                              ? "border-green-700 bg-green-700 text-white"
+                              : "border-stone-100 bg-stone-50 text-stone-900 hover:border-stone-200 hover:bg-white"
                           }`}
                         >
                           <p className="font-semibold">{option.label}</p>
@@ -388,9 +395,9 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                   </div>
 
                   {approxImc ? (
-                    <div className="mt-5 rounded-[1.5rem] border border-emerald-100 bg-emerald-50/80 p-4">
-                      <p className="text-sm text-slate-500">Leitura inicial estimada</p>
-                      <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+                    <div className="mt-5 rounded-2xl border border-sage-100 bg-sage-50 p-4">
+                      <p className="text-xs text-stone-400">Leitura inicial estimada</p>
+                      <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-900">
                         IMC aproximado {approxImc}
                       </p>
                     </div>
@@ -400,9 +407,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 5 && (
                 <StepShell
+                  key="step-5"
                   eyebrow="Rotina física"
                   title="Como está seu nível de atividade hoje?"
-                  description="Isso altera sua estimativa calórica, a margem de ajuste e a agressividade recomendada para o protocolo."
+                  description="Isso influencia as estimativas de energia e como ajustamos as sugestões alimentares para o seu dia."
                 >
                   <OptionGrid
                     options={activityOptions}
@@ -416,9 +424,10 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 6 && (
                 <StepShell
-                  eyebrow="Bloqueio central"
-                  title="O que mais dificulta seu emagrecimento?"
-                  description="A IA usa esse ponto como bloco principal de fricção para ajustar saciedade, previsibilidade e simplificação do plano."
+                  key="step-6"
+                  eyebrow="Desafio central"
+                  title="O que mais dificulta manter uma alimentação consistente?"
+                  description="Entender isso nos permite sugerir estratégias mais realistas e adaptadas ao seu contexto."
                 >
                   <OptionGrid
                     options={challengeOptions}
@@ -432,13 +441,14 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 7 && (
                 <StepShell
+                  key="step-7"
                   eyebrow="Histórico alimentar"
                   title="Sua relação com a comida já mostra algum padrão repetido?"
-                  description="Aqui medimos fome emocional e desgaste por tentativas anteriores para evitar mais um plano que parece bom, mas não encaixa."
+                  description="Isso nos ajuda a evitar sugestões que já não funcionaram para você antes e criar algo mais aderente."
                 >
                   <div className="space-y-6">
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Você sente fome emocional?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Você sente fome emocional?</p>
                       <OptionGrid
                         options={emotionalHungerOptions}
                         value={data.emotionalHunger}
@@ -449,7 +459,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                     </div>
 
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Quantas dietas você já tentou?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Quantas dietas você já tentou?</p>
                       <OptionGrid
                         options={dietOptions}
                         value={data.dietsTried}
@@ -463,13 +473,14 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 8 && (
                 <StepShell
+                  key="step-8"
                   eyebrow="Aderência"
                   title="Como você se sente e quão difícil é manter constância?"
-                  description="Não basta saber o que comer. Precisamos entender sua carga emocional e sua capacidade real de sustentar uma estratégia."
+                  description="Não basta saber o que comer. Precisamos entender sua carga emocional e o que é realista para você."
                 >
                   <div className="space-y-6">
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Como se sente ao se olhar no espelho?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Como se sente ao se olhar no espelho?</p>
                       <OptionGrid
                         options={mirrorOptions}
                         value={data.mirrorFeeling}
@@ -480,7 +491,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                     </div>
 
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Você sente dificuldade em manter constância?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Você sente dificuldade em manter constância?</p>
                       <OptionGrid
                         options={consistencyOptions}
                         value={data.consistencyDifficulty}
@@ -498,13 +509,14 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
 
               {step === 9 && (
                 <StepShell
-                  eyebrow="Ajuste final"
-                  title="Últimos sinais para a IA calibrar seu plano."
-                  description="Com isso fechamos horários críticos, atrito da rotina, restrições e se faz sentido incluir uma rotina básica de treino."
+                  key="step-9"
+                  eyebrow="Últimos detalhes"
+                  title="Mais alguns pontos para refinar sua análise."
+                  description="Com isso fechamos horários críticos, impacto da rotina, restrições e preferências de treino."
                 >
                   <div className="space-y-6">
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Em qual horário sente mais fome?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Em qual horário sente mais fome?</p>
                       <OptionGrid
                         options={hungerOptions}
                         value={data.hungerTime}
@@ -516,7 +528,7 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                     </div>
 
                     <div>
-                      <p className="mb-3 text-sm font-medium text-slate-500">Quanto sua rotina atrapalha sua alimentação?</p>
+                      <p className="mb-3 text-sm font-medium text-stone-500">Quanto sua rotina atrapalha sua alimentação?</p>
                       <OptionGrid
                         options={routineOptions}
                         value={data.routineImpact}
@@ -531,8 +543,8 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                       onChange={(event) =>
                         setData((current) => ({ ...current, restrictions: event.target.value }))
                       }
-                      placeholder="Restrições ou alimentos que devemos evitar"
-                      className="h-14 rounded-2xl border-slate-200 px-4 text-base"
+                      placeholder="Alimentos ou restrições que devemos considerar (opcional)"
+                      className="h-14 rounded-2xl border-stone-200 bg-stone-50 px-4 text-base focus:border-stone-400 focus:bg-white"
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -545,18 +557,18 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
                             onClick={() =>
                               setData((current) => ({ ...current, wantsWorkout: option }))
                             }
-                            className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                            className={`rounded-2xl border px-4 py-4 text-left transition-all duration-200 ${
                               selected
-                                ? "border-slate-950 bg-slate-950 text-white"
-                                : "border-slate-200 bg-white text-slate-900"
+                                ? "border-green-700 bg-green-700 text-white"
+                                : "border-stone-100 bg-stone-50 text-stone-900 hover:border-stone-200 hover:bg-white"
                             }`}
                           >
                             <p className="font-semibold">
                               {option ? "Quero incluir treino" : "Quero só o plano alimentar"}
                             </p>
-                            <p className={`mt-1 text-sm ${selected ? "text-slate-300" : "text-slate-500"}`}>
+                            <p className={`mt-1 text-sm ${selected ? "text-green-100" : "text-stone-400"}`}>
                               {option
-                                ? "Adicionar uma rotina básica para reforçar aderência"
+                                ? "Adicionar uma rotina básica para reforçar os resultados"
                                 : "Foco total em alimentação e organização"}
                             </p>
                           </button>
@@ -568,12 +580,13 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
               )}
             </AnimatePresence>
 
-            <div className="mt-6 flex items-center justify-between gap-3">
+            {/* Navigation */}
+            <div className="mt-5 flex items-center justify-between gap-3">
               <Button
                 variant="outline"
                 onClick={handleBack}
                 disabled={step === 1}
-                className="h-12 flex-1 rounded-2xl border-slate-200 bg-white/80 text-slate-700"
+                className="h-12 flex-1 rounded-2xl border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
@@ -581,9 +594,9 @@ export function NutritionQuiz({ onComplete }: NutritionQuizProps) {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="h-12 flex-1 rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
+                className="h-12 flex-1 rounded-2xl bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40"
               >
-                {step === TOTAL_STEPS ? "Gerar análise" : "Continuar"}
+                {step === TOTAL_STEPS ? "Gerar minha análise" : "Continuar"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>

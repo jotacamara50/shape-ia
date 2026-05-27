@@ -4,14 +4,14 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-const manrope = Manrope({ subsets: ["latin"] });
+const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || "751219594728680";
 const gaId = process.env.NEXT_PUBLIC_GA_ID || "G-NGJKFG4P4Z";
 
 export const metadata: Metadata = {
-  title: "Shape AI | Análise Metabólica Inteligente",
+  title: "Shape AI — Hábitos alimentares que se encaixam na sua vida",
   description:
-    "IA nutricional para analisar metabolismo, rotina e hábitos e gerar um plano alimentar personalizado.",
+    "Uma análise personalizada para entender seus padrões alimentares e criar um plano que funciona na sua rotina.",
 };
 
 export default function RootLayout({
